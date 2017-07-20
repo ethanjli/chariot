@@ -1,0 +1,3 @@
+mex demoMex.cpp mc_convert/mc_convert.cpp -DHAS_OPENCV ...
+    -I/usr/local/include/opencv2 -lopencv_core -lopencv_imgproc
+disp('done!');
