@@ -6,10 +6,11 @@ clear all; close all; clc;
 
 opts = init();
 root_dir = opts.root_dir;
+data_dir = opts.data_dir;
 
 img_folder = opts.img_folder;
-calibration_path = sprintf('%s/data/Calib/', root_dir);
-saveFolder = sprintf('%s/data/Results_%s/',root_dir, date);
+calibration_path = sprintf('%s/data/Calib/', data_dir);
+saveFolder = sprintf('%s/data/Results_%s/',data_dir, date);
 
 % Sequenz or single images
 seq_or_single = 1;                                      % 1-sequenz /2-single
@@ -22,7 +23,7 @@ if seq_or_single == 1
     end_frame = 5019;
 elseif seq_or_single == 2
     %load(sprintf('%sResultAll/F2.mat', saveFolder));    % Single Folder
-    load(sprintf('%s/data/F2.mat',root_dir));
+    load(sprintf('%s/data/F2.mat',data_dir));
     F = F2;     
     %seq = F(m,1);                                             % Seq No
     begin_frame = 1;
@@ -178,7 +179,7 @@ tic;
 Islic_name = sprintf('%sIslic_%06d.png', save_folder_disp, frame_number);                           
 Img_name = sprintf('%sImg_%06d.png', save_folder_disp, frame_number);                              
 Idis_name = sprintf('%sIdis_%06d.png', save_folder_disp, frame_number);                            
-t = [sprintf('%s/src/StereoSlic/stereoslic ', opts.root_dir) '-o ', Islic_name, ' ', Img_name, ' ', Idis_name];  
+t = [sprintf('%s/StereoSlic/stereoslic ', opts.root_dir) '-o ', Islic_name, ' ', Img_name, ' ', Idis_name];  
 unix(t);                                                                                            
                                                                                                     
 SP_file = sprintf('%sIslic_%06d.png',save_folder_disp, frame_number);                               %
@@ -209,7 +210,7 @@ if extract_plane_flag == 1
     config_MRF;
     opts = init();
     
-    PlaneIdx = planeInference(SP, Idis, PlaneHypos, sprintf('%s/data/Prior/',opts.root_dir), paramsM, 0);
+    PlaneIdx = planeInference(SP, Idis, PlaneHypos, sprintf('%s/data/Prior/',opts.data_dir), paramsM, 0);
     
     
     Idis_MRF = showPlanes(SP, PlaneIdx, PlaneHypos);

@@ -1,7 +1,7 @@
 opts = init;
 
 % path for the first make file
-p = [opts.root_dir,'/src'];
+p = opts.root_dir;
 
 % make quadmatching
 path = [p, '/Matching'];    

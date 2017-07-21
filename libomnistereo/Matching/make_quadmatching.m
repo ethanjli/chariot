@@ -2,7 +2,7 @@
 opts = init;
 
 if (isunix == 1)
-    mex('feature_quad_matching_mex.cpp', 'MatchingQuadSmall.cpp',['-L',opts.opencv_lib_dir], '-lopencv_core', '-lopencv_imgproc', '-lopencv_highgui', '-lopencv_features2d', '-lopencv_calib3d', '-lopencv_nonfree')
+    mex('feature_quad_matching_mex.cpp', 'MatchingQuadSmall.cpp',['-Wl,-rpath,', opts.sys_lib_dir],['-L',opts.opencv_lib_dir], '-lopencv_core', '-lopencv_imgproc', '-lopencv_highgui', '-lopencv_features2d', '-lopencv_calib3d', '-lopencv_nonfree')
 else
     mex('feature_quad_matching_mex.cpp', 'MatchingQuadSmall.cpp',['-I"',opts.opencv_inc_dir,'"'],['-L"',opts.opencv_lib_dir,'"'], ...
     ['-lopencv_core', opts.opencv_version], ['-lopencv_imgproc', opts.opencv_version], ...

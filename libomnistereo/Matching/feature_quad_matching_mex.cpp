@@ -47,6 +47,8 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
     Mat prev_left = cvLoadImageM( fnL, CV_LOAD_IMAGE_GRAYSCALE );
     Mat prev_right = cvLoadImageM( fnR, CV_LOAD_IMAGE_GRAYSCALE );
 
+    std::cout << "filename: " << fnL << std::endl;
+    //std::cout << "Previous image empty: " << prev_left.empty() << std::endl;
     /* ********************** */
     //-- Step 1: DETECTION -- //
     /* ********************** */

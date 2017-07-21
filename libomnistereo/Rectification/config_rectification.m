@@ -1,7 +1,7 @@
 % Config for Rectification
 opts = init();
 %% Parameter
-maske_stereo = imread(sprintf('%s/data/Masks/Maske_Stereo1.png',opts.root_dir));
+maske_stereo = imread(sprintf('%s/data/Masks/Maske_Stereo1.png',opts.data_dir));
 
 % Calibration Methods Rectification 
 calib_stereo = 14;
