@@ -1,12 +1,7 @@
 #!/usr/bin/env python2
 import unittest
-import os
 
 from utilities import computation_chains
-
-_PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-
-POINT_CLOUD_MAT_PATH = os.path.join(_PACKAGE_PATH, 'point_cloud.mat')
 
 class Parameter(computation_chains.Parameter):
     def __init__(self, value):

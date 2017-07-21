@@ -235,3 +235,4 @@ def make_dir_path(path):
     except OSError as e:
         if not(e.errno == errno.EEXIST and os.path.isdir(path)):
             raise
+
