@@ -1,3 +1,5 @@
+"""Classes for lazily evaluated expression chains."""
+
 import numpy as np
 
 class Chainable(object):
@@ -39,15 +41,18 @@ class UpdatableChainable(Chainable):
         """Checks whether calling update would trigger any downstream changes.
         A change would be triggered in the evaluation of the computation chain
         if the state of the current Chainable or any upstream Chainables has changed."""
-        source_needs_update = (self.source is not None
-                               and self.source.needs_update())
+        source_needs_update = (self.source is not None and
+                               self.source.needs_update())
         return self._needs_update or source_needs_update
 
 class Parameter(UpdatableChainable):
     """Plain old parameters. Can act as sources and destinations.
     When acting as a source, it's the input to the chain.
     When acting as a destination, it's the output from the chain; then the chain
-    can be executed by calling the update method."""
+    can be evaluated by calling the update method. If upstream chainables were modified,
+    those modifications will only be propagated down to the parameter with an update.
+    When acting as a middle link, it's the input to the downstream chain.
+    """
     def get(self):
         """Returns the value of the Parameter."""
         pass
