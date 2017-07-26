@@ -93,9 +93,15 @@ class TimeRange:
                 start = end - duration
             elif end is None:
                 end = start + duration
+            elif start + duration != end:
+                raise(ValueError('Self-inconsistent start time, end time, and duration!'))
         self.start = start
         self.end = end
         self.reference = reference
+
+    @property
+    def referenced(self):
+        return self.reference is not None
 
     @property
     def absolute(self):

@@ -176,3 +176,59 @@ class TestUpdateListDataBuffer(unittest.TestCase):
             'Incorrect update of small buffer with larger list'
         )
 
+class TestTimeRange(unittest.TestCase):
+    def test_init(self):
+        time_range = util.TimeRange()
+        self.assertEqual(time_range.start, None,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.end, None,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.reference, None,
+                         'Incorrect initialization')
+        self.assertFalse(time_range.referenced,
+                         'Incorrect initialization')
+
+        time_range = util.TimeRange(100, 200, 0)
+        self.assertEqual(time_range.start, 100,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.end, 200,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.reference, 0,
+                         'Incorrect initialization')
+        self.assertTrue(time_range.referenced,
+                        'Incorrect initialization')
+
+        time_range = util.TimeRange(100, 200, duration=100)
+        self.assertEqual(time_range.start, 100,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.end, 200,
+                         'Incorrect initialization')
+
+        time_range = util.TimeRange(start=100, duration=100)
+        self.assertEqual(time_range.start, 100,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.end, 200,
+                         'Incorrect initialization')
+
+        time_range = util.TimeRange(end=200, duration=100)
+        self.assertEqual(time_range.start, 100,
+                         'Incorrect initialization')
+        self.assertEqual(time_range.end, 200,
+                         'Incorrect initialization')
+
+    def test_reference(self):
+        time_range = util.TimeRange(100, 200, 0)
+        self.assertEqual(time_range.absolute, (100, 200),
+                         'Incorrect zero reference')
+        time_range = util.TimeRange(100, 200, 100)
+        self.assertEqual(time_range.absolute, (200, 300),
+                         'Incorrect nonzero reference')
+
+    def test_duration(self):
+        time_range = util.TimeRange(100, 200)
+        self.assertEqual(time_range.duration, 100,
+                         'Incorrect duration')
+        time_range = util.TimeRange(100, 200, 100)
+        self.assertEqual(time_range.duration, 100,
+                         'Incorrect duration with reference')
+
