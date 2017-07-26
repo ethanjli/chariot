@@ -304,8 +304,8 @@ class Dataset():
 
         selected_timestamps = list(util.time_range_sequence(
             timestamps, absolute_start, absolute_end))
-        return (util.paths_by_index(files_directory, get_sequence_suffix(sequence),
-                                    selected_timestamps), iter(selected_timestamps))
+        return (util.paths(files_directory, get_sequence_suffix(sequence),
+                           selected_timestamps), iter(selected_timestamps))
 
     def stereo_sequences_by_timestamp(self, preprocessed=True, include_center=False,
                                       time_range=None):
@@ -333,8 +333,8 @@ class Dataset():
 
         selected_timestamps = list(util.time_range_sequence(
             timestamps, absolute_start, absolute_end))
-        return (util.paths_by_index(directories, get_sequence_suffix(sequence),
-                                    selected_timestamps), iter(selected_timestamps))
+        return (util.paths(directories, get_sequence_suffix(sequence),
+                           selected_timestamps), iter(selected_timestamps))
 
 
     def sequence_by_index(self, sequence, indices=None):
@@ -350,8 +350,7 @@ class Dataset():
         files_directory = self.get_path(sequence)
         timestamps = self.get_timestamps(sequence)
         selected_timestamps = util.sequence(timestamps, indices)
-        return util.paths_by_index(files_directory, get_sequence_suffix(sequence),
-                                   selected_timestamps)
+        return util.paths(files_directory, get_sequence_suffix(sequence), selected_timestamps)
 
     def stereo_sequences_by_index(self, preprocessed=True, include_center=False, indices=None):
         """Returns a generator of stereo file paths of specified indices.
@@ -373,6 +372,5 @@ class Dataset():
         directories = tuple(self.get_path((sequence, location)) for location in locations)
         timestamps = self.get_timestamps(sequence)
         selected_timestamps = util.sequence(timestamps, indices)
-        return util.paths_by_index(directories, get_sequence_suffix(sequence),
-                                   selected_timestamps)
+        return util.paths(directories, get_sequence_suffix(sequence), selected_timestamps)
 

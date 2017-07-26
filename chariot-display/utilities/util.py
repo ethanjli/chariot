@@ -196,7 +196,7 @@ def time_aligned_sequence(times, reference_times, yield_index=False):
             current_reference = next(reference_times)
         index += 1
 
-def paths_by_index(files_directories, file_suffix, file_names):
+def paths(files_directories, file_suffix, file_names):
     """A generator of file paths of the specified names in the specified directories.
     If multiple source directories are specified, paths of the same name in each
     directory will be yielded together in a tuple with the same order in which

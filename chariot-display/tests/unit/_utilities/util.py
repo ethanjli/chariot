@@ -423,3 +423,26 @@ class TestTimeAlignedSequence(unittest.TestCase):
         self.assertEqual(list(times), [10, 14, 20, 100],
                          'Incorrect alignment')
 
+class TestPaths(unittest.TestCase):
+    def test_single_directory(self):
+        paths = util.paths('foo', '.bar', ['a', 'b', 'c'])
+        self.assertEqual(list(paths), ['foo/a.bar', 'foo/b.bar', 'foo/c.bar'],
+                         'Incorrect paths')
+
+    def test_number_names(self):
+        paths = util.paths('foo', '.bar', [1, 2, 3])
+        self.assertEqual(list(paths), ['foo/1.bar', 'foo/2.bar', 'foo/3.bar'],
+                         'Incorrect paths')
+
+    def test_multiple_directories(self):
+        paths = util.paths(['foo', 'foobar'], '.bar', ['a', 'b', 'c'])
+        self.assertEqual(list(paths), [('foo/a.bar', 'foobar/a.bar'),
+                                       ('foo/b.bar', 'foobar/b.bar'),
+                                       ('foo/c.bar', 'foobar/c.bar')],
+                         'Incorrect paths')
+        paths = util.paths(['foobar', 'foo'], '.bar', ['a', 'b', 'c'])
+        self.assertEqual(list(paths), [('foobar/a.bar', 'foo/a.bar'),
+                                       ('foobar/b.bar', 'foo/b.bar'),
+                                       ('foobar/c.bar', 'foo/c.bar')],
+                         'Incorrect paths')
+
