@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 import unittest
 
+import numpy as np
+
 from utilities import util
 
 class TestGetFromTree(unittest.TestCase):
@@ -100,4 +102,77 @@ class TestRingBuffer(unittest.TestCase):
                              'Incorrect continuous view')
             self.assertEqual(self.ringBuffer.length, 4,
                              'Incorrect length')
+
+class TestGridDataToListData(unittest.TestCase):
+    def test_flat(self):
+        as_grid = np.array([[[1], [2], [3]], [[4], [5], [6]]])
+        as_list = np.array([[1], [2], [3], [4], [5], [6]])
+        self.assertEqual(
+            util.grid_data_to_list_data(as_grid).tolist(), as_list.tolist(),
+            'Incorrect reshape of flat grid'
+        )
+
+    def test_three_channel(self):
+        as_grid = np.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                            [[10, 11, 12], [13, 14, 15], [16, 17, 18]]])
+        as_list = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9],
+                            [10, 11, 12], [13, 14, 15], [16, 17, 18]])
+        self.assertEqual(
+            util.grid_data_to_list_data(as_grid).tolist(), as_list.tolist(),
+            'Incorrect reshape of flat grid'
+        )
+
+class TestUpdateListDataBuffer(unittest.TestCase):
+    def setUp(self):
+        self.small_buffer = np.zeros((5, 3))
+        self.large_buffer = np.zeros((10, 3))
+        self.list = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9],
+                              [10, 11, 12], [13, 14, 15], [16, 17, 18]])
+        self.tiny_list = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9],
+                                   [0, 0, 0], [0, 0, 0]])
+        self.small_list = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9],
+                                    [10, 11, 12], [13, 14, 15]])
+        self.large_list = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9],
+                                    [10, 11, 12], [13, 14, 15], [16, 17, 18],
+                                    [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+
+    def test_update(self):
+        for i in range(20):
+            util.update_list_data_buffer(self.small_buffer, self.small_list, i)
+            self.assertEqual(
+                self.small_buffer.tolist(), self.small_list.tolist(),
+                'Incorrect update of small buffer with larger list'
+            )
+
+    def test_oversized_update(self):
+        for i in range(20):
+            util.update_list_data_buffer(self.small_buffer, self.list, i)
+            self.assertEqual(
+                self.small_buffer.tolist(), self.small_list.tolist(),
+                'Incorrect update of small buffer with larger list'
+            )
+
+    def test_undersized_update(self):
+        for i in range(20):
+            util.update_list_data_buffer(self.large_buffer, self.list, i)
+            self.assertEqual(
+                self.large_buffer.tolist(), self.large_list.tolist(),
+                'Incorrect update of small buffer with larger list'
+            )
+
+    def test_downsized_update(self):
+        util.update_list_data_buffer(self.small_buffer, self.small_list, 5)
+        util.update_list_data_buffer(self.small_buffer, self.small_list[:3, :], 5)
+        self.assertEqual(
+            self.small_buffer.tolist(), self.tiny_list.tolist(),
+            'Incorrect update of small buffer with larger list'
+        )
+
+    def test_downsized_update_parsimony(self):
+        util.update_list_data_buffer(self.small_buffer, self.small_list, 5)
+        util.update_list_data_buffer(self.small_buffer, self.small_list[:3, :], 3)
+        self.assertEqual(
+            self.small_buffer.tolist(), self.small_list.tolist(),
+            'Incorrect update of small buffer with larger list'
+        )
 
