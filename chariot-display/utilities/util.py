@@ -43,18 +43,25 @@ class RingBuffer(object):
         self._index = (self._index + 1) % self.data.size
         self.data[self._index] = value
 
-    def get_head(self):
-        """Gets the most recently added value in the buffer."""
+    @property
+    def head(self):
+        """The most recently added value in the buffer."""
+        if self._index < 0:
+            return None
         return self.data[self._index]
 
-    def get_tail(self):
-        """Gets the least recently added value in the buffer."""
-        if self.length:
+    @property
+    def tail(self):
+        """The least recently added value in the buffer."""
+        if self._index < 0:
+            return None
+        elif self.length:
             return self.data[(self._index + 1) % self.length]
         else:
             return None
 
-    def get_continuous(self):
+    @property
+    def continuous(self):
         """Returns a copy of the buffer with elements in correct time order."""
         if self.length < self.data.size:
             return np.concatenate((self.data[:self._index + 1],

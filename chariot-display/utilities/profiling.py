@@ -12,8 +12,8 @@ class FramerateCounter():
         self._buffer.append(current_time)
 
     def query(self):
-        earliest_time = self._buffer.get_tail()
-        current_time = self._buffer.get_head()
+        earliest_time = self._buffer.tail
+        current_time = self._buffer.head
         frames = self._buffer.length
         if frames <= 1 or current_time == earliest_time:
             return None

@@ -45,7 +45,7 @@ class SlidingWindowFilter(util.RingBuffer):
         elif self.estimation_mode == 'mean':
             return self.get_mean()
         elif self.estimation_mode == 'raw':
-            return self.get_head()
+            return self.head
         else:
             if self.length < self.data.size:
                 return None
@@ -80,7 +80,7 @@ class SlidingWindowFilter(util.RingBuffer):
         return np.amax(self.data[:self.length])
 
     def get_timeseries(self):
-        values = self.get_continuous()
+        values = self.continuous
         times = np.arange(len(values)) - len(values)
         return (times, values)
 
@@ -98,7 +98,7 @@ class SlidingWindowThresholdFilter(SlidingWindowFilter):
         self._stationary_duration = 0
 
     def estimate_current(self):
-        if self.in_stationary_range(self.get_head()):
+        if self.in_stationary_range(self.head):
             self._stationary_duration += 1
             if self._stationary_duration >= self.stationary_transition_smoothness:
                 self._nonstationary_duration = 0
