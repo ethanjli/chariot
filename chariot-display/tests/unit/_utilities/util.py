@@ -358,3 +358,68 @@ class TestTimeRangeSequence(unittest.TestCase):
         self.assertEqual(list(times), [10, 13, 14, 15, 18],
                          'Incorrect sequence')
 
+    def test_yield_indices(self):
+        times = util.time_range_sequence(self.times, 5, 10, True)
+        self.assertEqual(list(times), [(0, 10)],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 9, 18, True)
+        self.assertEqual(list(times), [(0, 10), (1, 13), (2, 14), (3, 15), (4, 18)],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 10, 18, True)
+        self.assertEqual(list(times), [(0, 10), (1, 13), (2, 14), (3, 15), (4, 18)],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 9, 19, True)
+        self.assertEqual(list(times), [(0, 10), (1, 13), (2, 14), (3, 15), (4, 18)],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 10, 19, True)
+        self.assertEqual(list(times), [(0, 10), (1, 13), (2, 14), (3, 15), (4, 18)],
+                         'Incorrect sequence')
+
+class TestTimeAlignedSequence(unittest.TestCase):
+    def setUp(self):
+        self.times = [10, 13, 14, 15, 18, 20, 22, 26, 27, 28, 29, 30, 100]
+
+    def test_reference_before(self):
+        times = util.time_aligned_sequence(self.times, [9, 11])
+        self.assertEqual(list(times), [10, 13],
+                         'Incorrect alignment')
+        times = util.time_aligned_sequence(self.times, [9, 11, 12])
+        self.assertEqual(list(times), [10, 13, 13],
+                         'Incorrect alignment')
+
+    def test_reference_after(self):
+        times = util.time_aligned_sequence(self.times, [11, 12, 13, 14])
+        self.assertEqual(list(times), [13, 13, 13, 14],
+                         'Incorrect alignment')
+
+    def test_reference_on(self):
+        times = util.time_aligned_sequence(self.times, [10, 12, 13, 14])
+        self.assertEqual(list(times), [10, 13, 13, 14],
+                         'Incorrect alignment')
+
+    def test_reference_iterator(self):
+        times = util.time_aligned_sequence(self.times, iter([9, 11]))
+        self.assertEqual(list(times), [10, 13],
+                         'Incorrect alignment')
+
+    def test_reference_at_end(self):
+        times = util.time_aligned_sequence(self.times, [9, 14, 19, 31, 100])
+        self.assertEqual(list(times), [10, 14, 20, 100, 100],
+                         'Incorrect alignment')
+
+    def test_reference_past_end(self):
+        times = util.time_aligned_sequence(self.times, [9, 14, 19, 31, 100, 101])
+        self.assertEqual(list(times), [10, 14, 20, 100, 100],
+                         'Incorrect alignment')
+
+    def test_references_between(self):
+        times = util.time_aligned_sequence(self.times, [9, 11, 12, 13])
+        self.assertEqual(list(times), [10, 13, 13, 13],
+                         'Incorrect alignment')
+        times = util.time_aligned_sequence(self.times, [9, 11, 12, 13, 14])
+        self.assertEqual(list(times), [10, 13, 13, 13, 14],
+                         'Incorrect alignment')
+        times = util.time_aligned_sequence(self.times, [9, 14, 19, 31])
+        self.assertEqual(list(times), [10, 14, 20, 100],
+                         'Incorrect alignment')
+

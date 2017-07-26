@@ -174,12 +174,18 @@ def time_aligned_sequence(times, reference_times, yield_index=False):
 
     Args:
         times: an iterable collection of times.
-        reference_times: an iterable of the provided reference times.
+        reference_times: an iterable collection or iterator of the provided reference times.
     Coroutine Yields:
-        Yields each aligned timestamp from start to end, inclusive
+        Yields an aligned timestamp from times for each reference time from reference_times.
+        The current timestamp yielded is largest time from times less than or equal to the
+        current reference time from reference_times, until the last time in times.
 
     """
     index = 0
+    try:
+        reference_times = iter(reference_times)
+    except TypeError:
+        pass
     current_reference = next(reference_times)
     for time in times:
         while int(time) >= current_reference:
@@ -189,31 +195,6 @@ def time_aligned_sequence(times, reference_times, yield_index=False):
                 yield time
             current_reference = next(reference_times)
         index += 1
-
-def time_sequence(times):
-    """A coroutine walking through an indexable collection of times.
-
-    Args:
-        times: an indexable collection of times.
-
-    Coroutine Args:
-        Initialize by sending None.
-        Then send the end of the next time interval of timestamps to yield.
-    Coroutine Yields:
-        Yields a list of timestamps within the next specified time interval
-        after the previous time interval.
-
-    """
-    index = 0
-    next_times = []
-    while True:
-        next_time_limit = yield next_times
-        next_times = []
-        if index >= len(times):
-            raise StopIteration
-        while index < len(times) and times[index] <= next_time_limit:
-            next_times.append(times[index])
-            index += 1
 
 def paths_by_index(files_directories, file_suffix, file_names):
     """A generator of file paths of the specified names in the specified directories.
