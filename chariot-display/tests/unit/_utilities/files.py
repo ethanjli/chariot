@@ -34,18 +34,22 @@ class TestPaths(unittest.TestCase):
 class TestFiles(unittest.TestCase):
     def test_uniform(self):
         listed_files = files.file_names(SEQUENCE_PARENT_PATH, 'a', '.txt')
-        self.assertEqual(list(listed_files), ['a0001.txt', 'a0002.txt', 'a0003.txt'])
+        self.assertEqual(list(listed_files), ['a0001.txt', 'a0002.txt', 'a0003.txt'],
+                         'Incorrect file listing')
 
     def test_nonuniform(self):
         listed_files = files.file_names(SEQUENCE_PARENT_PATH, 'b', '.txt')
-        self.assertEqual(list(listed_files), ['b0.txt', 'b1.txt', 'b2.txt', 'b10.txt', 'b11.txt'])
+        self.assertEqual(list(listed_files), ['b0.txt', 'b1.txt', 'b2.txt', 'b10.txt', 'b11.txt'],
+                         'Incorrect file listing')
 
 class TestFileIndices(unittest.TestCase):
     def test_uniform(self):
         listed_files = files.file_name_roots(SEQUENCE_PARENT_PATH, 'a', '.txt')
-        self.assertEqual(list(listed_files), ['0001', '0002', '0003'])
+        self.assertEqual(list(listed_files), ['0001', '0002', '0003'],
+                         'Incorrect file listing')
 
     def test_nonuniform(self):
         listed_files = files.file_name_roots(SEQUENCE_PARENT_PATH, 'b', '.txt')
-        self.assertEqual(list(listed_files), ['0', '1', '2', '10', '11'])
+        self.assertEqual(list(listed_files), ['0', '1', '2', '10', '11'],
+                         'Incorrect file listing')
 
