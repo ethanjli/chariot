@@ -235,6 +235,10 @@ class TestTimeRange(unittest.TestCase):
 class TestNaturalSorting(unittest.TestCase):
     def setUp(self):
         self.strings = [
+            '10',
+            '11',
+            '013',
+            '21',
             '4',
             'c',
             'a',
@@ -250,6 +254,10 @@ class TestNaturalSorting(unittest.TestCase):
             '2',
             '0003',
             '4',
+            '10',
+            '11',
+            '013',
+            '21',
             'a',
             'b',
             'c'
