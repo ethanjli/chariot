@@ -210,7 +210,7 @@ class ImageLoaderClient(data.DataLoader, data.DataGenerator, data.ArraySource):
             sequence_set += '_chunked'
 
             (time_begin, time_end) = self.time_range.absolute
-            indices_timestamps = util.time_immediate_sequence(
+            indices_timestamps = util.time_range_sequence(
                 timestamps, time_begin, time_end, yield_index=True, )
             (indices, self._timestamps) = zip(*indices_timestamps)
 

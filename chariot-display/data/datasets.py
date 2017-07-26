@@ -302,7 +302,7 @@ class Dataset():
         timestamps = self.get_timestamps(sequence)
         (absolute_start, absolute_end) = self.get_time_range(sequence, time_range).absolute
 
-        selected_timestamps = list(util.time_immediate_sequence(
+        selected_timestamps = list(util.time_range_sequence(
             timestamps, absolute_start, absolute_end))
         return (util.paths_by_index(files_directory, get_sequence_suffix(sequence),
                                     selected_timestamps), iter(selected_timestamps))
@@ -331,7 +331,7 @@ class Dataset():
         (absolute_start, absolute_end) = self.get_time_range(
             (sequence, locations[0]), time_range).absolute
 
-        selected_timestamps = list(util.time_immediate_sequence(
+        selected_timestamps = list(util.time_range_sequence(
             timestamps, absolute_start, absolute_end))
         return (util.paths_by_index(directories, get_sequence_suffix(sequence),
                                     selected_timestamps), iter(selected_timestamps))

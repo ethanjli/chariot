@@ -144,38 +144,39 @@ def sequence(indexable, indices=None):
     for index in indices:
         yield indexable[index]
 
-def time_immediate_sequence(times, begin=0, end=None, yield_index=False):
-    """A coroutine walking through an iterable sequence of times.
+def time_range_sequence(times, start=0, end=None, yield_index=False):
+    """A generator walking through an iterable sequence of times.
     Times are assumed to be monotonically non-decreasing.
 
     Args:
         times: an iterable collection of times.
-        begin: the beginning time of the sequence range
-        end: the end time of the sequence range (NOTE: defaults to entire range if no range specified)
+        start: the start time of the sequence range; the first acceptable time in the output.
+        end: the end time of the sequence range; the last acceptable time in the output.
+        Defaults to entire range if start and end are unspecified.
     Coroutine Yields:
-        Yields each immediate timestamp from begin to end, inclusive
+        Yields each range timestamp from start to end, inclusive
 
     """
     index = 0
     for time in times:
-        if int(time) >= begin:
+        if end is not None and int(time) > end:
+            raise StopIteration
+        if int(time) >= start:
             if yield_index:
                 yield (index, time)
             else:
                 yield time
-        if end is not None and int(time) > end:
-            raise StopIteration
         index += 1
 
 def time_aligned_sequence(times, reference_times, yield_index=False):
-    """A coroutine walking through an iterable sequence of times nearest to the provided reference.
+    """A generator walking through an iterable sequence of times nearest to the provided reference.
     Times are assumed to be monotonically non-decreasing.
 
     Args:
         times: an iterable collection of times.
         reference_times: an iterable of the provided reference times.
     Coroutine Yields:
-        Yields each immediate timestamp from begin to end, inclusive
+        Yields each aligned timestamp from start to end, inclusive
 
     """
     index = 0

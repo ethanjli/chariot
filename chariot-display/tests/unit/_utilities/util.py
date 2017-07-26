@@ -267,3 +267,94 @@ class TestNaturalSorting(unittest.TestCase):
         self.assertEqual(sorted(self.strings, key=util.natural_keys), self.sorted_strings,
                          'Incorrect natural sorting')
 
+class TestSequence(unittest.TestCase):
+    def setUp(self):
+        self.string = 'abcdefghijklmnopqrstuvwxyz'
+        self.list = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+
+    def test_string_sequence(self):
+        sequence = util.sequence(self.string)
+        self.assertEqual(list(sequence), [char for char in self.string],
+                         'Incorrect sequence')
+        sequence = util.sequence(self.string, range(5, 10))
+        self.assertEqual(list(sequence), ['f', 'g', 'h', 'i', 'j'],
+                         'Incorrect indexed sequence')
+
+    def test_list_sequence(self):
+        sequence = util.sequence(self.list)
+        self.assertEqual(list(sequence), self.list,
+                         'Incorrect sequence')
+        sequence = util.sequence(self.list, [3, 4, 5])
+        self.assertEqual(list(sequence), [8, 10, 12],
+                         'Incorrect indexed sequence')
+        sequence = util.sequence(self.list, [5, 4, 3])
+        self.assertEqual(list(sequence), [12, 10, 8],
+                         'Incorrect arbitrarily-ordered indexed sequence')
+
+class TestTimeRangeSequence(unittest.TestCase):
+    def setUp(self):
+        self.times = [10, 13, 14, 15, 18, 20, 22, 26, 27, 28, 29, 30, 100]
+
+    def test_start_times(self):
+        times = util.time_range_sequence(self.times)
+        self.assertEqual(list(times), self.times,
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, -10)
+        self.assertEqual(list(times), self.times,
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 28)
+        self.assertEqual(list(times), [28, 29, 30, 100],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 90)
+        self.assertEqual(list(times), [100],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 100)
+        self.assertEqual(list(times), [100],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 200)
+        self.assertEqual(list(times), [],
+                         'Incorrect sequence')
+
+    def test_end_times(self):
+        times = util.time_range_sequence(self.times, end=100)
+        self.assertEqual(list(times), self.times,
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=200)
+        self.assertEqual(list(times), self.times,
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=90)
+        self.assertEqual(list(times), self.times[:-1],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=5)
+        self.assertEqual(list(times), [],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=0)
+        self.assertEqual(list(times), [],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=9)
+        self.assertEqual(list(times), [],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=10)
+        self.assertEqual(list(times), [10],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, end=12)
+        self.assertEqual(list(times), [10],
+                         'Incorrect sequence')
+
+    def test_start_end_times(self):
+        times = util.time_range_sequence(self.times, 5, 10)
+        self.assertEqual(list(times), [10],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 9, 18)
+        self.assertEqual(list(times), [10, 13, 14, 15, 18],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 10, 18)
+        self.assertEqual(list(times), [10, 13, 14, 15, 18],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 9, 19)
+        self.assertEqual(list(times), [10, 13, 14, 15, 18],
+                         'Incorrect sequence')
+        times = util.time_range_sequence(self.times, 10, 19)
+        self.assertEqual(list(times), [10, 13, 14, 15, 18],
+                         'Incorrect sequence')
+
