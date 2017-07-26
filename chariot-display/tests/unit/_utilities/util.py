@@ -232,3 +232,30 @@ class TestTimeRange(unittest.TestCase):
         self.assertEqual(time_range.duration, 100,
                          'Incorrect duration with reference')
 
+class TestNaturalSorting(unittest.TestCase):
+    def setUp(self):
+        self.strings = [
+            '4',
+            'c',
+            'a',
+            '0',
+            '0003',
+            '2',
+            '0001',
+            'b'
+        ]
+        self.sorted_strings = [
+            '0',
+            '0001',
+            '2',
+            '0003',
+            '4',
+            'a',
+            'b',
+            'c'
+        ]
+
+    def test_sort(self):
+        self.assertEqual(sorted(self.strings, key=util.natural_keys), self.sorted_strings,
+                         'Incorrect natural sorting')
+
