@@ -12,6 +12,7 @@ class PointCloudSequence(sequences.FileSequence):
         if 'suffix' not in kwargs or not kwargs['suffix'].endswith('.mat'):
             kwargs['suffix'] = '.mat'
         super(PointCloudSequence, self).__init__(*args, **kwargs)
+        self._num_points = None
 
     def point_cloud(self, index):
         """Returns the loaded point cloud at the specified index."""
@@ -25,7 +26,14 @@ class PointCloudSequence(sequences.FileSequence):
         def generate_point_clouds():
             for index in self.indices:
                 yield self.point_cloud(index)
-        return generate_point_clouds
+        return generate_point_clouds()
+
+    @property
+    def num_points(self):
+        if self._num_points is None:
+            first_point_cloud = self.point_cloud(next(self.indices))
+            self._num_points = first_point_cloud.num_points
+        return self._num_points
 
 class Dataset(datasets.Dataset):
     """Interface for libomnistereo output datasets."""
@@ -40,7 +48,7 @@ class Dataset(datasets.Dataset):
             'point_cloud': {
                 'raw': {
                     'files': PointCloudSequence(
-                        path.join(sequences_root_path, 'Stereo_Disp'), 'P_hor_'
+                        path.join(sequences_root_path, 'Rectification'), 'point_cloud_stereo_'
                     )
                 }
             }

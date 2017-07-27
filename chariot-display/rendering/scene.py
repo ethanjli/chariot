@@ -1,8 +1,9 @@
 """Classes for scene management."""
 import itertools
 
+from utilities import profiling, concurrency
 from visuals import mesh, point_cloud, text
-from utilities import profiling
+import canvas
 
 VISUAL_NAMES = ['car', 'local']
 VISUALS = {
@@ -63,6 +64,9 @@ VIEW_PRESETS = {
     }
 }
 
+def DefaultCanvas():
+    return canvas.SceneCanvas(VIEW_PRESETS['1']['camera'])
+
 class SceneManager():
     """Manages customizable aspects of the visuals scene."""
     def __init__(self, presets):
@@ -70,13 +74,11 @@ class SceneManager():
         self._presets = presets
 
         self.point_clouds = {
-            'stereo': None,
-            'lidar': None
+            'local': None,
+            'global': None
         }
         self.meshes = {
-            'car': None,
-            'road': None,
-            'objects': None
+            'car': None
         }
         self.images = {
             ('mono_preprocessed', 'left'): None,
@@ -172,3 +174,29 @@ class SceneManager():
         if updated:
             self._canvas.update()
             self.framerate_counter.tick()
+
+class SceneAnimator(concurrency.Thread):
+    """Abstract class for animating a scene."""
+    def __init__(self, view_presets=VIEW_PRESETS):
+        super(SceneAnimator, self).__init__()
+        self.canvas = None
+        self.scene_manager = SceneManager(view_presets)
+
+    # Rendering initialization helpers
+
+    def register_canvas(self, scene_canvas, register_updater=True):
+        self.canvas = scene_canvas
+        self.scene_manager.register_canvas(scene_canvas, register_updater)
+
+    def init_car_visual(self):
+        self.scene_manager.add_visual('car')
+
+    def init_local_visual(self, point_cloud_sequence, points_margin=1000):
+        self.scene_manager.add_visual('local')
+        self.scene_manager.point_clouds['local'].initialize_data(point_cloud_sequence.num_points + points_margin)
+
+    # Rendering update helpers
+
+    def update_local(self, point_cloud):
+        self.scene_manager.point_clouds['local'].update_data(point_cloud)
+

@@ -61,10 +61,22 @@ class Thread(object):
         self._thread.start()
 
     def terminate(self):
+        self.on_terminate()
         self._run = False
         if self._thread is not None:
             self._thread.join()
             self._thread = None
+        self.on_terminate_finish()
+
+    def on_terminate(self):
+        """Do any work right before termination.
+        Implement this."""
+        pass
+
+    def on_terminate_finish(self):
+        """Do any work right after termination.
+        Implement this."""
+        pass
 
 # PROCESSES
 
