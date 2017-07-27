@@ -1,20 +1,72 @@
 #!/usr/bin/env python2
 """Classes to enable painless process-level parallelism."""
 
+import threading
 import operator
 import multiprocessing
 from multiprocessing import Array, Value
 import ctypes
 try:
-        from Queue import Queue, Empty, Full
+        from Queue import Empty
 except ImportError:
-        from queue import Queue, Empty, Full
+        from queue import Empty
 
 import numpy as np
 from numpy.ctypeslib import as_array
 
-import datasets
-import data
+from data import data
+
+# THREADING
+
+class Thread(object):
+    """Abstract convenience class for work done asynchronously in a thread."""
+    def __init__(self):
+        self._thread = None
+        self._run = True
+
+    @property
+    def name(self):
+        """The name of the thread.
+        Override this to use something other than the name of the derived class."""
+        return self.__class__.__name__
+
+    def on_run_start(self):
+        """Do any work before execute starts being called.
+        Implement this."""
+        pass
+
+    def execute(self):
+        """Do the work.
+        Implement this with the work to be done. If the work never ends,
+        it needs to check self._run to be able to be preemptively terminated.
+        If the work does end, it will be called repeatedly as long as self._run is True."""
+        pass
+
+    def on_run_finish(self):
+        """Do any work after execute stops being called.
+        Implement this."""
+        pass
+
+    def run_sync(self):
+        """Perform the work synchronously."""
+        self.on_run_start()
+        while self._run:
+            self.execute()
+        self.on_run_finish()
+
+    def run_async(self):
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(target=self.run_sync, name=self.name)
+        self._thread.start()
+
+    def terminate(self):
+        self._run = False
+        if self._thread is not None:
+            self._thread.join()
+            self._thread = None
+
+# PROCESSES
 
 class EarlyTermination(Exception):
     """A custom exception used when multiprocessing workers are terminated early.
@@ -214,7 +266,7 @@ class LoaderGenerator(data.DataLoader, data.DataGenerator):
                     break
                 except Empty:
                     pass
-            if command == None:
+            if command is None:
                 break
             elif command[0] == 'load_next':
                 if keep_loading:
