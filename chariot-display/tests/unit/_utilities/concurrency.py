@@ -82,8 +82,6 @@ class TestThreading(unittest.TestCase):
         self.assertEqual(self.thread._thread.name, 'TightThread',
                          'Incorrect thread name')
         while self.thread.work_counter < 6:
-            self.assertTrue(self.thread._run,
-                            'Incorrect thread state')
             time.sleep(0.01)
         self.assert_thread_state()
         self.thread.terminate()
@@ -94,8 +92,6 @@ class TestThreading(unittest.TestCase):
         self.thread = TightThread()
         self.thread.run_async()
         while self.thread.work_counter < 6:
-            self.assertTrue(self.thread._run,
-                            'Incorrect thread state')
             time.sleep(0.01)
         self.thread.terminate()
         self.assert_thread_state()
@@ -111,8 +107,6 @@ class TestThreading(unittest.TestCase):
         self.assertEqual(self.thread._thread.name, 'LooseThread',
                          'Incorrect thread name')
         while self.thread.work_counter < 6:
-            self.assertTrue(self.thread._run,
-                            'Incorrect thread state')
             time.sleep(0.01)
         self.assert_thread_state()
         self.thread.terminate()
@@ -123,8 +117,6 @@ class TestThreading(unittest.TestCase):
         self.thread = LooseThread()
         self.thread.run_async()
         while self.thread.work_counter < 6:
-            self.assertTrue(self.thread._run,
-                            'Incorrect thread state')
             time.sleep(0.01)
         self.thread.terminate()
         self.assert_thread_state()

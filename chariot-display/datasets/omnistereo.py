@@ -8,7 +8,7 @@ import datasets
 
 # SEQUENCE DEFINITIONS
 
-class PointCloudSequence(sequences.FileSequence):
+class PointCloudSequence(sequences.FileSequence, point_clouds.Sequence):
     """A sequence of point clouds stored in discrete .mat files."""
     def __init__(self, *args, **kwargs):
         if 'suffix' not in kwargs or not kwargs['suffix'].endswith('.mat'):

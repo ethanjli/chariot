@@ -15,3 +15,10 @@ class PointCloud(object):
     def num_points(self):
         return self.points.shape[0]
 
+class Sequence(object):
+    """Interface for point cloud sequences."""
+
+    @property
+    def num_points(self):
+        return None
+
