@@ -22,7 +22,7 @@ class Thread(object):
     """Abstract convenience class for work done asynchronously in a thread."""
     def __init__(self):
         self._thread = None
-        self._run = True
+        self._run = False
 
     @property
     def name(self):
@@ -49,6 +49,7 @@ class Thread(object):
 
     def run_sync(self):
         """Perform the work synchronously."""
+        self._run = True
         self.on_run_start()
         while self._run:
             self.execute()

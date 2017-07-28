@@ -2,7 +2,7 @@
 """Functions and classes for loading of results output by libomnistereo."""
 from os import path
 
-from data import point_clouds
+from data import data, asynchronous, point_clouds
 import sequences
 import datasets
 
@@ -13,6 +13,7 @@ class PointCloudSequence(sequences.FileSequence):
             kwargs['suffix'] = '.mat'
         super(PointCloudSequence, self).__init__(*args, **kwargs)
         self._num_points = None
+        self._num_samples = None
 
     def point_cloud(self, index):
         """Returns the loaded point cloud at the specified index."""
@@ -21,19 +22,54 @@ class PointCloudSequence(sequences.FileSequence):
         return point_cloud
 
     @property
-    def point_clouds(self):
-        """Returns a generator of PointClouds."""
-        def generate_point_clouds():
-            for index in self.indices:
-                yield self.point_cloud(index)
-        return generate_point_clouds()
-
-    @property
     def num_points(self):
         if self._num_points is None:
             first_point_cloud = self.point_cloud(next(self.indices))
             self._num_points = first_point_cloud.num_points
         return self._num_points
+
+    @property
+    def num_samples(self):
+        if self._num_samples is None:
+            self._num_samples = len(list(self.indices))
+        return self._num_samples
+
+class PointCloudSequenceLoader(data.DataLoader, data.DataGenerator):
+    """Class for synchronous PointCloud loading."""
+    def __init__(self, sequence, *args, **kwargs):
+        super(PointCloudSequenceLoader, self).__init__(*args, **kwargs)
+        self.sequence = sequence
+        self._indices = self.sequence.indices
+
+    def load_next(self):
+        """Loads the next point cloud specified by the indices and returns it.
+        If there is no point cloud to load, returns None."""
+        index = next(self._indices, None)
+        if index is None:
+            return None
+        else:
+            return self.sequence.point_cloud(index)
+
+    # From DataLoader
+
+    def next(self):
+        next_point_cloud = self.load_next()
+        if next_point_cloud is None:
+            raise StopIteration
+        return next_point_cloud
+
+    # From DataGenerator
+
+    def reset(self):
+        self._indices = self.sequence.indices
+
+    def __len__(self):
+        return self.sequence.num_samples
+
+class PointCloudSequenceAsyncLoader(asynchronous.Loader, PointCloudSequenceLoader):
+    def __init__(self, sequence, max_size=10, *args, **kwargs):
+        super(PointCloudSequenceAsyncLoader, self).__init__(
+            max_size, False, sequence, *args, **kwargs)
 
 class Dataset(datasets.Dataset):
     """Interface for libomnistereo output datasets."""
@@ -54,7 +90,7 @@ class Dataset(datasets.Dataset):
             }
         }
 
-    # Implements Dataset
+    # From datasets.Dataset
 
     @property
     def parent_path(self):
