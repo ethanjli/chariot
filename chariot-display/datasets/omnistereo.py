@@ -2,7 +2,7 @@
 """Functions and classes for loading of results output by libomnistereo."""
 from os import path
 
-from data import data, asynchronous, point_clouds
+from data import asynchronous, point_clouds
 import sequences
 import datasets
 
@@ -15,8 +15,7 @@ class PointCloudSequence(sequences.FileSequence):
         self._num_points = None
         self._num_samples = None
 
-    def point_cloud(self, index):
-        """Returns the loaded point cloud at the specified index."""
+    def __getitem__(self, index):
         point_cloud = point_clouds.PointCloud()
         point_cloud.load_from_mat(self.file_path(index))
         return point_cloud
@@ -24,8 +23,7 @@ class PointCloudSequence(sequences.FileSequence):
     @property
     def num_points(self):
         if self._num_points is None:
-            first_point_cloud = self.point_cloud(next(self.indices))
-            self._num_points = first_point_cloud.num_points
+            self._num_points = self[next(self.indices)].num_points
         return self._num_points
 
     @property
@@ -34,37 +32,15 @@ class PointCloudSequence(sequences.FileSequence):
             self._num_samples = len(list(self.indices))
         return self._num_samples
 
-class PointCloudSequenceLoader(data.DataLoader, data.DataGenerator):
+class PointCloudSequenceLoader(sequences.FileSequenceLoader):
     """Class for synchronous PointCloud loading."""
-    def __init__(self, sequence, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(PointCloudSequenceLoader, self).__init__(*args, **kwargs)
-        self.sequence = sequence
-        self._indices = self.sequence.indices
 
-    def load_next(self):
-        """Loads the next point cloud specified by the indices and returns it.
-        If there is no point cloud to load, returns None."""
-        index = next(self._indices, None)
-        if index is None:
-            return None
-        else:
-            return self.sequence.point_cloud(index)
+    # From FileSequenceLoader
 
-    # From DataLoader
-
-    def next(self):
-        next_point_cloud = self.load_next()
-        if next_point_cloud is None:
-            raise StopIteration
-        return next_point_cloud
-
-    # From DataGenerator
-
-    def reset(self):
-        self._indices = self.sequence.indices
-
-    def __len__(self):
-        return self.sequence.num_samples
+    def load_at(self, index):
+        return self.sequence.point_cloud(index)
 
 class PointCloudSequenceAsyncLoader(asynchronous.Loader, PointCloudSequenceLoader):
     def __init__(self, sequence, max_size=10, *args, **kwargs):

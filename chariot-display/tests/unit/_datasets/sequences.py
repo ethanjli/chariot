@@ -8,9 +8,17 @@ _PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 SEQUENCE_PARENT_PATH = os.path.join(_PACKAGE_PATH, 'sequence')
 
+class TextFileSequence(sequences.FileSequence):
+    def __init__(self, *args, **kwargs):
+        super(TextFileSequence, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, index):
+        with open(self.file_path(index), 'r') as f:
+            return f.read().replace('\n', '').strip()
+
 class TestFileSequence(unittest.TestCase):
     def setUp(self):
-        self.sequence = sequences.FileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
+        self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
 
     def test_basic(self):
         self.assertEqual(self.sequence.file_name('0001'), '0001.txt',
@@ -29,4 +37,12 @@ class TestFileSequence(unittest.TestCase):
                           os.path.join(SEQUENCE_PARENT_PATH, '0002.txt'),
                           os.path.join(SEQUENCE_PARENT_PATH, '0003.txt')],
                          'Incorrect file paths')
+
+    def test_loading(self):
+        self.assertEqual(self.sequence['0001'], 'foo',
+                         'Incorrect loading')
+        self.assertEqual(self.sequence['0002'], 'bar',
+                         'Incorrect loading')
+        self.assertEqual(self.sequence['0003'], 'foobar',
+                         'Incorrect loading')
 

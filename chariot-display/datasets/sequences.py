@@ -3,6 +3,7 @@
 from os import path
 
 from utilities import files
+from data import data
 
 class Sequence(object):
     """Base class for a uniform sequence of data over time."""
@@ -28,6 +29,11 @@ class FileSequence(Sequence):
         """Returns the path of the specified file."""
         return path.join(self.parent_path, self.file_name(*args, **kwargs))
 
+    def __getitem__(self, index):
+        """Returns the data at the specified index.
+        Implement this."""
+        return None
+
     @property
     def indices(self):
         """Returns a generator of file indices in ascending order."""
@@ -37,4 +43,36 @@ class FileSequence(Sequence):
     def file_paths(self):
         """Returns a generator of file paths in ascending index order."""
         return files.paths(self.parent_path, self.indices, self.prefix, self.suffix)
+
+class FileSequenceLoader(data.DataLoader, data.DataGenerator):
+    """Abstract base class for synchronous loading of FileSequences."""
+    def __init__(self, sequence, *args, **kwargs):
+        super(FileSequenceLoader, self).__init__(*args, **kwargs)
+        self.sequence = sequence
+        self._indices = self.sequence.indices
+
+    def load_next(self):
+        """Loads the data at the next time point specified by the indices and returns it.
+        If there is no data to load, returns None."""
+        index = next(self._indices, None)
+        if index is None:
+            return None
+        else:
+            return self.sequence[index]
+
+    # From DataLoader
+
+    def next(self):
+        next_data = self.load_next()
+        if next_data is None:
+            raise StopIteration
+        return next_data
+
+    # From DataGenerator
+
+    def reset(self):
+        self._indices = self.sequence.indices
+
+    def __len__(self):
+        return self.sequence.num_samples
 
