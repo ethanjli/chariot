@@ -43,7 +43,6 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
         print(self.__class__.__name__ + ': Loading...')
 
     def execute(self, block=True, timeout=1):
-        """The thread function which continuously loads new data into memory."""
         if not self._load:
             return
         self._on_load()

@@ -6,6 +6,8 @@ from data import asynchronous, point_clouds
 import sequences
 import datasets
 
+# SEQUENCE DEFINITIONS
+
 class PointCloudSequence(sequences.FileSequence):
     """A sequence of point clouds stored in discrete .mat files."""
     def __init__(self, *args, **kwargs):
@@ -32,15 +34,15 @@ class PointCloudSequence(sequences.FileSequence):
             self._num_samples = len(list(self.indices))
         return self._num_samples
 
-class PointCloudSequenceLoader(sequences.FileSequenceLoader):
-    """Class for synchronous PointCloud loading."""
-    def __init__(self, *args, **kwargs):
-        super(PointCloudSequenceLoader, self).__init__(*args, **kwargs)
 
-class PointCloudSequenceAsyncLoader(asynchronous.Loader, PointCloudSequenceLoader):
-    def __init__(self, sequence, max_size=10, *args, **kwargs):
-        super(PointCloudSequenceAsyncLoader, self).__init__(
-            max_size, False, sequence, *args, **kwargs)
+# SEQUENCE LOADERS
+
+PointCloudSequenceLoader = sequences.FileSequenceLoader
+
+def PointCloudSequenceAsyncLoader(sequence, max_size=10, *args, **kwargs):
+    return sequences.FileSequenceAsyncLoader(sequence, max_size, False, *args, **kwargs)
+
+# DATASET DEFINITION
 
 class Dataset(datasets.Dataset):
     """Interface for libomnistereo output datasets."""

@@ -16,10 +16,6 @@ class TextFileSequence(sequences.FileSequence):
         with open(self.file_path(index), 'r') as f:
             return f.read().replace('\n', '').strip()
 
-class TextFileSequenceLoader(sequences.FileSequenceLoader):
-    def __init__(self, *args, **kwargs):
-        super(TextFileSequenceLoader, self).__init__(*args, **kwargs)
-
 class TestFileSequence(unittest.TestCase):
     def setUp(self):
         self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
@@ -53,7 +49,7 @@ class TestFileSequence(unittest.TestCase):
 class TestFileSequenceLoader(unittest.TestCase):
     def setUp(self):
         self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
-        self.loader = TextFileSequenceLoader(self.sequence)
+        self.loader = sequences.FileSequenceLoader(self.sequence)
         self.loader.load()
 
     def test_load_next(self):
@@ -81,10 +77,10 @@ class TestFileSequenceLoader(unittest.TestCase):
         self.assertEqual(contents, 'foobar',
                          'Incorrect loading')
         try:
-            contents = self.loader.load_next()
+            contents = next(self.loader)
             self.assertFalse(True,
                              'Incorrect generator termination behavior.')
-        except:
+        except StopIteration:
             pass
 
     def test_reset(self):
@@ -95,4 +91,39 @@ class TestFileSequenceLoader(unittest.TestCase):
         self.test_next()
         self.loader.reset()
         self.test_next()
+
+class TestFileSequenceAsyncLoader(unittest.TestCase):
+    def setUp(self):
+        self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
+        self.loader = sequences.FileSequenceAsyncLoader(self.sequence, 2, False)
+        self.loader.load()
+
+    def test_next(self):
+        contents = next(self.loader)
+        self.assertEqual(contents, 'foo',
+                         'Incorrect loading')
+        contents = next(self.loader)
+        self.assertEqual(contents, 'bar',
+                         'Incorrect loading')
+        contents = next(self.loader)
+        self.assertEqual(contents, 'foobar',
+                         'Incorrect loading')
+        try:
+            contents = next(self.loader)
+            self.assertFalse(True,
+                             'Incorrect generator termination behavior.')
+        except StopIteration:
+            pass
+
+    def test_reset(self):
+        self.test_next()
+        self.loader.reset()
+        self.test_next()
+        self.loader.reset()
+        self.test_next()
+        self.loader.reset()
+        self.test_next()
+
+    def tearDown(self):
+        self.loader.stop_loading()
 
