@@ -16,6 +16,10 @@ class TextFileSequence(sequences.FileSequence):
         with open(self.file_path(index), 'r') as f:
             return f.read().replace('\n', '').strip()
 
+class TextFileSequenceLoader(sequences.FileSequenceLoader):
+    def __init__(self, *args, **kwargs):
+        super(TextFileSequenceLoader, self).__init__(*args, **kwargs)
+
 class TestFileSequence(unittest.TestCase):
     def setUp(self):
         self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
@@ -45,4 +49,50 @@ class TestFileSequence(unittest.TestCase):
                          'Incorrect loading')
         self.assertEqual(self.sequence['0003'], 'foobar',
                          'Incorrect loading')
+
+class TestFileSequenceLoader(unittest.TestCase):
+    def setUp(self):
+        self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
+        self.loader = TextFileSequenceLoader(self.sequence)
+        self.loader.load()
+
+    def test_load_next(self):
+        contents = self.loader.load_next()
+        self.assertEqual(contents, 'foo',
+                         'Incorrect loading')
+        contents = self.loader.load_next()
+        self.assertEqual(contents, 'bar',
+                         'Incorrect loading')
+        contents = self.loader.load_next()
+        self.assertEqual(contents, 'foobar',
+                         'Incorrect loading')
+        contents = self.loader.load_next()
+        self.assertIsNone(contents,
+                          'Incorrect loading sentinel value')
+
+    def test_next(self):
+        contents = next(self.loader)
+        self.assertEqual(contents, 'foo',
+                         'Incorrect loading')
+        contents = next(self.loader)
+        self.assertEqual(contents, 'bar',
+                         'Incorrect loading')
+        contents = next(self.loader)
+        self.assertEqual(contents, 'foobar',
+                         'Incorrect loading')
+        try:
+            contents = self.loader.load_next()
+            self.assertFalse(True,
+                             'Incorrect generator termination behavior.')
+        except:
+            pass
+
+    def test_reset(self):
+        self.test_load_next()
+        self.loader.reset()
+        self.test_load_next()
+        self.loader.reset()
+        self.test_next()
+        self.loader.reset()
+        self.test_next()
 

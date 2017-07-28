@@ -34,8 +34,8 @@ class TestParameterChaining(unittest.TestCase):
         computation_chains.chain(*self.chain)
 
     def test_connectivity(self):
-        self.assertEqual(self.chain[0].source, None,
-                         'Incorrect chain source')
+        self.assertIsNone(self.chain[0].source,
+                          'Incorrect chain source')
         self.assertEqual(self.chain[0].destination, self.chain[1],
                          'Incorrect chain link')
         self.assertEqual(self.chain[1].source, self.chain[0],
@@ -44,8 +44,8 @@ class TestParameterChaining(unittest.TestCase):
                          'Incorrect chain link')
         self.assertEqual(self.chain[2].source, self.chain[1],
                          'Incorrect chain link')
-        self.assertEqual(self.chain[2].destination, None,
-                         'Incorrect chain destination')
+        self.assertIsNone(self.chain[2].destination,
+                          'Incorrect chain destination')
 
     def test_initial_update_state(self):
         for parameter in self.chain:

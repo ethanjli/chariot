@@ -37,11 +37,6 @@ class PointCloudSequenceLoader(sequences.FileSequenceLoader):
     def __init__(self, *args, **kwargs):
         super(PointCloudSequenceLoader, self).__init__(*args, **kwargs)
 
-    # From FileSequenceLoader
-
-    def load_at(self, index):
-        return self.sequence.point_cloud(index)
-
 class PointCloudSequenceAsyncLoader(asynchronous.Loader, PointCloudSequenceLoader):
     def __init__(self, sequence, max_size=10, *args, **kwargs):
         super(PointCloudSequenceAsyncLoader, self).__init__(

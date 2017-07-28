@@ -36,10 +36,10 @@ class TestRingBuffer(unittest.TestCase):
         self.ringBuffer = util.RingBuffer(4)
 
     def test_initial(self):
-        self.assertEqual(self.ringBuffer.head, None,
-                         'Incorrect initial head')
-        self.assertEqual(self.ringBuffer.tail, None,
-                         'Incorrect initial tail')
+        self.assertIsNone(self.ringBuffer.head,
+                          'Incorrect initial head')
+        self.assertIsNone(self.ringBuffer.tail,
+                          'Incorrect initial tail')
         self.assertEqual(self.ringBuffer.data.size, 4,
                          'Incorrect initial buffer')
         self.assertEqual(self.ringBuffer.continuous.size, 0,
@@ -179,12 +179,12 @@ class TestUpdateListDataBuffer(unittest.TestCase):
 class TestTimeRange(unittest.TestCase):
     def test_init(self):
         time_range = util.TimeRange()
-        self.assertEqual(time_range.start, None,
-                         'Incorrect initialization')
-        self.assertEqual(time_range.end, None,
-                         'Incorrect initialization')
-        self.assertEqual(time_range.reference, None,
-                         'Incorrect initialization')
+        self.assertIsNone(time_range.start,
+                          'Incorrect initialization')
+        self.assertIsNone(time_range.end,
+                          'Incorrect initialization')
+        self.assertIsNone(time_range.reference,
+                          'Incorrect initialization')
         self.assertFalse(time_range.referenced,
                          'Incorrect initialization')
 

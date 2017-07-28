@@ -87,8 +87,8 @@ class TestThreading(unittest.TestCase):
             time.sleep(0.01)
         self.assert_thread_state()
         self.thread.terminate()
-        self.assertEqual(self.thread._thread, None,
-                         'Incorrect thread state')
+        self.assertIsNone(self.thread._thread,
+                          'Incorrect thread state')
 
     def test_tight_preemptive(self):
         self.thread = TightThread()
@@ -116,8 +116,8 @@ class TestThreading(unittest.TestCase):
             time.sleep(0.01)
         self.assert_thread_state()
         self.thread.terminate()
-        self.assertEqual(self.thread._thread, None,
-                         'Incorrect thread state')
+        self.assertIsNone(self.thread._thread,
+                          'Incorrect thread state')
 
     def test_loose_preemptive(self):
         self.thread = LooseThread()

@@ -45,7 +45,7 @@ class FileSequence(Sequence):
         return files.paths(self.parent_path, self.indices, self.prefix, self.suffix)
 
 class FileSequenceLoader(data.DataLoader, data.DataGenerator):
-    """Abstract base class for synchronous loading of FileSequences."""
+    """Class for synchronous loading of FileSequences."""
     def __init__(self, sequence, *args, **kwargs):
         super(FileSequenceLoader, self).__init__(*args, **kwargs)
         self.sequence = sequence
@@ -63,6 +63,8 @@ class FileSequenceLoader(data.DataLoader, data.DataGenerator):
     # From DataLoader
 
     def next(self):
+        """Loads the data at the next time point specified by the indices and returns it.
+        If there is no data to load, raises StopIteration."""
         next_data = self.load_next()
         if next_data is None:
             raise StopIteration
@@ -71,8 +73,10 @@ class FileSequenceLoader(data.DataLoader, data.DataGenerator):
     # From DataGenerator
 
     def reset(self):
+        """Resets the loader to start loading from the top."""
         self._indices = self.sequence.indices
 
     def __len__(self):
+        """Returns the number of time points of data in the sequence."""
         return self.sequence.num_samples
 

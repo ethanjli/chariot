@@ -20,11 +20,11 @@ class TestDataset(unittest.TestCase):
 
     def test_point_cloud_raw_files_sequence(self):
         sequence = self.dataset.sequences['point_cloud']['raw']['files']
-        self.assertEqual(sequence.file_name('000001'), 'P_hor_000001.mat',
+        self.assertEqual(sequence.file_name('000001'), 'point_cloud_stereo_000001.mat',
                          'Incorrect file name')
         self.assertEqual(sequence.file_path('000001'),
-                         os.path.join(DATASETS_PATH, 'omnistereo', 'Seq_0008', 'Stereo_Disp',
-                                      'P_hor_000001.mat'),
+                         os.path.join(DATASETS_PATH, 'omnistereo', 'Seq_0008', 'Rectification',
+                                      'point_cloud_stereo_000001.mat'),
                          'Incorrect file path')
         self.assertEqual(list(sequence.indices), ['000001', '000002', '000003'],
                          'Incorrect indices')
