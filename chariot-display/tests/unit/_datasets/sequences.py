@@ -92,10 +92,10 @@ class TestFileSequenceLoader(unittest.TestCase):
         self.loader.reset()
         self.test_next()
 
-class TestFileSequenceAsyncLoader(unittest.TestCase):
+class TestFileSequenceConcurrentLoader(unittest.TestCase):
     def setUp(self):
         self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
-        self.loader = sequences.FileSequenceAsyncLoader(self.sequence, 2, False)
+        self.loader = sequences.FileSequenceConcurrentLoader(self.sequence, 2, False)
         self.loader.load()
 
     def test_next(self):

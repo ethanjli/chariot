@@ -71,14 +71,14 @@ class TestThreading(unittest.TestCase):
         self.assertTrue(self.thread.work_counter >= 6,
                         'Incorrect thread state')
 
-    def test_tight_cooperative_sync(self):
+    def test_tight_cooperative_serial(self):
         self.thread = TightThread(cooperative=True)
-        self.thread.run_sync()
+        self.thread.run_serial()
         self.assert_thread_state()
 
-    def test_tight_cooperative_async(self):
+    def test_tight_cooperative_concurrent(self):
         self.thread = TightThread(cooperative=True)
-        self.thread.run_async()
+        self.thread.run_concurrent()
         self.assertEqual(self.thread._thread.name, 'TightThread',
                          'Incorrect thread name')
         while self.thread.work_counter < 6:
@@ -90,20 +90,20 @@ class TestThreading(unittest.TestCase):
 
     def test_tight_preemptive(self):
         self.thread = TightThread()
-        self.thread.run_async()
+        self.thread.run_concurrent()
         while self.thread.work_counter < 6:
             time.sleep(0.01)
         self.thread.terminate()
         self.assert_thread_state()
 
-    def test_loose_cooperative_sync(self):
+    def test_loose_cooperative_serial(self):
         self.thread = LooseThread(cooperative=True)
-        self.thread.run_sync()
+        self.thread.run_serial()
         self.assert_thread_state()
 
-    def test_loose_cooperative_async(self):
+    def test_loose_cooperative_concurrent(self):
         self.thread = LooseThread(cooperative=True)
-        self.thread.run_async()
+        self.thread.run_concurrent()
         self.assertEqual(self.thread._thread.name, 'LooseThread',
                          'Incorrect thread name')
         while self.thread.work_counter < 6:
@@ -115,7 +115,7 @@ class TestThreading(unittest.TestCase):
 
     def test_loose_preemptive(self):
         self.thread = LooseThread()
-        self.thread.run_async()
+        self.thread.run_concurrent()
         while self.thread.work_counter < 6:
             time.sleep(0.01)
         self.thread.terminate()

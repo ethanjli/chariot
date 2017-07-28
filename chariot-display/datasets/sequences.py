@@ -3,7 +3,7 @@
 from os import path
 
 from utilities import files
-from data import data, asynchronous
+from data import data, concurrent
 
 class Sequence(object):
     """Base class for a uniform sequence of data over time."""
@@ -80,7 +80,7 @@ class FileSequenceLoader(data.DataLoader, data.DataGenerator):
         """Returns the number of time points of data in the sequence."""
         return self.sequence.num_samples
 
-class FileSequenceAsyncLoader(asynchronous.Loader, FileSequenceLoader):
+class FileSequenceConcurrentLoader(concurrent.Loader, FileSequenceLoader):
     def __init__(self, sequence, max_size, discard_upon_none, *args, **kwargs):
-        super(FileSequenceAsyncLoader, self).__init__(max_size, False, sequence, *args, **kwargs)
+        super(FileSequenceConcurrentLoader, self).__init__(max_size, False, sequence, *args, **kwargs)
 

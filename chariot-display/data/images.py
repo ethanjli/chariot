@@ -111,25 +111,25 @@ class PreloadingImageLoader(ImageLoader):
             raise RuntimeError('PreloadingImageLoader Error: You need to call the load method first!')
         return next(self._images)
 
-class AsynchronousImageLoader(data.AsynchronousDataLoader, ImageLoader):
+class ConcurrentImageLoader(data.ConcurrentDataLoader, ImageLoader):
     """Loads all specified images into RAM in a separate thread.
     Note that, because image loading is slow, this gives only a small performance boost.
     """
     def __init__(self, file_paths_generator, downsampling=2, max_size=500):
         all_file_paths = list(file_paths_generator)
-        super(AsynchronousImageLoader, self).__init__(max_size, discard_upon_none=False,
-                                                      all_file_paths=all_file_paths, downsampling=downsampling)
+        super(ConcurrentImageLoader, self).__init__(max_size, discard_upon_none=False,
+                                                    all_file_paths=all_file_paths, downsampling=downsampling)
 
-class PreloadingAsynchronousImageLoader(data.PreloadingAsynchronousDataLoader, ImageLoader):
+class PreloadingConcurrentImageLoader(data.PreloadingConcurrentDataLoader, ImageLoader):
     """Blocks in the parent thread until the images buffer in the RAM is initially filled.
     This behaves like the PreloadingImageLoader but doesn't require that all files be loaded in RAM.
 
     Note that, because image loading is slow, performance will eventually degrade
-    to that of AsynchronousImageLoader - we just get a faster start.
+    to that of ConcurrentImageLoader - we just get a faster start.
     """
     def __init__(self, file_paths_generator, downsampling=2, max_size=500):
         all_file_paths = list(file_paths_generator)
-        super(PreloadingAsynchronousImageLoader, self).__init__(
+        super(PreloadingConcurrentImageLoader, self).__init__(
             max_size, all_file_paths, downsampling)
 
 class ChunkedImageLoader(data.DataLoader, data.DataGenerator):
@@ -188,7 +188,7 @@ class ChunkedImageLoader(data.DataLoader, data.DataGenerator):
 
 class ImageLoaderClient(data.DataLoader, data.DataGenerator, data.ArraySource):
     def __init__(self, dataset, sequences, time_range=None, reference_timestamps=None,
-                 downsampling=2, ImageLoader=AsynchronousImageLoader,
+                 downsampling=2, ImageLoader=ConcurrentImageLoader,
                  ChunkLoader=data.DataChunkLoader):
         self._dataset = dataset
         self.sequences = sequences

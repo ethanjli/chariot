@@ -2,7 +2,7 @@
 """Functions and classes for loading of results output by libomnistereo."""
 from os import path
 
-from data import asynchronous, point_clouds
+from data import concurrent, point_clouds
 import sequences
 import datasets
 
@@ -39,8 +39,8 @@ class PointCloudSequence(sequences.FileSequence, point_clouds.Sequence):
 
 PointCloudSequenceLoader = sequences.FileSequenceLoader
 
-def PointCloudSequenceAsyncLoader(sequence, max_size=10, *args, **kwargs):
-    return sequences.FileSequenceAsyncLoader(sequence, max_size, False, *args, **kwargs)
+def PointCloudSequenceConcurrentLoader(sequence, max_size=10, *args, **kwargs):
+    return sequences.FileSequenceConcurrentLoader(sequence, max_size, False, *args, **kwargs)
 
 # DATASET DEFINITION
 

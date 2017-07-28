@@ -8,7 +8,7 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).__init__()
         self.dataset = omnistereo.Dataset('Results_26-Jul-2017')
         self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
-        self.point_cloud_loader = omnistereo.PointCloudSequenceAsyncLoader(self.sequence)
+        self.point_cloud_loader = omnistereo.PointCloudSequenceConcurrentLoader(self.sequence)
 
     def register_canvas(self, canvas):
         super(Animator, self).register_canvas(canvas)
@@ -16,7 +16,7 @@ class Animator(scene.SceneAnimator):
         self.init_car_visual()
         self.init_local_visual(self.sequence)
         self.point_cloud_loader.load()
-        self.run_async()
+        self.run_concurrent()
 
     def execute(self):
         try:

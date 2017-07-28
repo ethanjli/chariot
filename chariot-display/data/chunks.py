@@ -5,7 +5,7 @@ import h5py
 
 from utilities import util
 import data
-import asynchronous
+import concurrent
 
 def load_chunk_array(chunk):
     loaded = chunk[()]
@@ -113,16 +113,16 @@ class PreloadingLoader(Loader):
             raise RuntimeError(self.__class__.__name__ + ' Error: You need to call the load method first!')
         return next(self._loaded_chunks)
 
-class AsynchronousLoader(asynchronous.Loader, Loader):
+class ConcurrentLoader(concurrent.Loader, Loader):
     """Loads chunks of data stored in an hdf5 chunk archive in a separate thread."""
     def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(AsynchronousLoader, self).__init__(
+        super(ConcurrentLoader, self).__init__(
             max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
 
-class PreloadingAsynchronousLoader(asynchronous.PreloadingLoader, Loader):
+class PreloadingConcurrentLoader(concurrent.PreloadingLoader, Loader):
     """Blocks in the parent thread until the chunks buffer in the RAM is initially filled."""
     def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(PreloadingAsynchronousLoader, self).__init__(
+        super(PreloadingConcurrentLoader, self).__init__(
             max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
 
 class SynchronizedLoaders(data.DataLoader, data.DataGenerator, data.ArraySource):

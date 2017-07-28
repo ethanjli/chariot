@@ -15,7 +15,7 @@ class Animator(scene.SceneAnimator):
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
         self.init_local_visual(self.sequence)
-        self.run_async()
+        self.run_concurrent()
 
     def execute(self):
         try:

@@ -1,4 +1,4 @@
-"""Classes for loading chunked data asynchronously in separate threads."""
+"""Classes for loading chunked data concurrently in separate threads."""
 import threading
 try:
         from Queue import Queue, Full
@@ -56,13 +56,13 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
     # From DataLoader
 
     def load(self):
-        """Makes a new thread which asynchronously loads new data into memory."""
+        """Makes a new thread which concurrently loads new data into memory."""
         super(Loader, self).load()
         self._load = True
-        self.run_async()
+        self.run_concurrent()
 
     def stop_loading(self):
-        """Stops the thread which is asynchronously loading new data into memory."""
+        """Stops the thread which is concurrently loading new data into memory."""
         self._load = False
         self.terminate()
         super(Loader, self).stop_loading()
@@ -70,7 +70,7 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
     # From DataGenerator
 
     def reset(self):
-        """Stops the thread which is asynchronously loading new data.
+        """Stops the thread which is concurrently loading new data.
         After this is called, we can call load again."""
         if self.__loader_thread is not None:
             self.stop_loading()
@@ -93,7 +93,7 @@ class PreloadingLoader(Loader):
     For proper multiple inheritance MRO, this should be the leftmost base class.
     """
 
-    # From AsynchronousDataLoader
+    # From ConcurrentDataLoader
 
     def _on_load(self):
         if self._data_queue.full():

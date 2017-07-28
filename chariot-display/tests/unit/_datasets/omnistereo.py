@@ -48,13 +48,13 @@ class TestPointCloudSequenceLoader(unittest.TestCase):
         self.assertEqual(next(self.loader).num_points, 293242,
                          'Incorrect point cloud loading')
 
-class TestPointCloudSequenceAsyncLoader(unittest.TestCase):
+class TestPointCloudSequenceConcurrentLoader(unittest.TestCase):
     def setUp(self):
         self.sequence = omnistereo.PointCloudSequence(
             os.path.join(DATASETS_PATH, 'omnistereo', 'Seq_0008', 'Rectification'),
             'point_cloud_stereo_'
         )
-        self.loader = omnistereo.PointCloudSequenceAsyncLoader(self.sequence)
+        self.loader = omnistereo.PointCloudSequenceConcurrentLoader(self.sequence)
         self.loader.load()
 
     def test_loading(self):

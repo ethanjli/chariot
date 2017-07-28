@@ -73,9 +73,9 @@ class ArraysSource(object):
         return None
 
 
-# ASYNCHRONOUS I/O
+# CONCURRENT I/O
 
-class AsynchronousDataLoader(DataLoader, DataGenerator):
+class ConcurrentDataLoader(DataLoader, DataGenerator):
     """Mix-in for loading data in a separate thread.
     For proper multiple inheritance MRO, this should be the leftmost base class.
 
@@ -84,7 +84,7 @@ class AsynchronousDataLoader(DataLoader, DataGenerator):
     empty tuple instead of None, next() will never return None.
     """
     def __init__(self, max_size, discard_upon_none=True, *args, **kwargs):
-        super(AsynchronousDataLoader, self).__init__(*args, **kwargs)
+        super(ConcurrentDataLoader, self).__init__(*args, **kwargs)
         self.__loader_thread = None
         self._data_queue = Queue(max_size)
         self._load = True
@@ -113,8 +113,8 @@ class AsynchronousDataLoader(DataLoader, DataGenerator):
     # From DataLoader
 
     def load(self):
-        """Makes a new thread which asynchronously loads new data into memory."""
-        super(AsynchronousDataLoader, self).load()
+        """Makes a new thread which concurrently loads new data into memory."""
+        super(ConcurrentDataLoader, self).load()
         if self.__loader_thread is not None:
             print(self.__class__.__name__ + ' Warning: Already loading. Doing nothing.')
             return
@@ -123,23 +123,23 @@ class AsynchronousDataLoader(DataLoader, DataGenerator):
         self.__loader_thread.start()
 
     def stop_loading(self):
-        """Stops the thread which is asynchronously loading new data into memory."""
+        """Stops the thread which is concurrently loading new data into memory."""
         self._load = False
         if self.__loader_thread is None:
             print(self.__class__.__name__ + ' Warning: Not currently loading data. Doing nothing.')
             return
         self.__loader_thread.join()
         self.__loader_thread = None
-        super(AsynchronousDataLoader, self).stop_loading()
+        super(ConcurrentDataLoader, self).stop_loading()
 
     # From DataGenerator
 
     def reset(self):
-        """Stops the thread which is asynchronously loading new data.
+        """Stops the thread which is concurrently loading new data.
         After this is called, we can call load again."""
         if self.__loader_thread is not None:
             self.stop_loading()
-        super(AsynchronousDataLoader, self).reset()
+        super(ConcurrentDataLoader, self).reset()
         self._load = True
 
     def next(self, block=True, timeout=None):
@@ -152,12 +152,12 @@ class AsynchronousDataLoader(DataLoader, DataGenerator):
             raise StopIteration
         return next_data
 
-class PreloadingAsynchronousDataLoader(AsynchronousDataLoader):
+class PreloadingConcurrentDataLoader(ConcurrentDataLoader):
     """Blocks in the parent thread until the data buffer in memory is initially filled.
     For proper multiple inheritance MRO, this should be the leftmost base class.
     """
 
-    # From AsynchronousDataLoader
+    # From ConcurrentDataLoader
 
     def _on_load(self):
         if self._data_queue.full():
@@ -171,7 +171,7 @@ class PreloadingAsynchronousDataLoader(AsynchronousDataLoader):
         """
         self._queue_filled = threading.Event()
         print(self.__class__.__name__ + ': Waiting for enough data to be loaded...')
-        super(PreloadingAsynchronousDataLoader, self).load()
+        super(PreloadingConcurrentDataLoader, self).load()
         if loading_wait_interval == 0:
             return
         try:
@@ -187,7 +187,7 @@ class PreloadingAsynchronousDataLoader(AsynchronousDataLoader):
 
     def reset(self):
         self._queue_filled.clear()
-        super(PreloadingAsynchronousDataLoader, self).reset()
+        super(PreloadingConcurrentDataLoader, self).reset()
 
 # CHUNKED DATA
 
@@ -297,16 +297,16 @@ class PreloadingDataChunkLoader(DataChunkLoader):
             raise RuntimeError(self.__class__.__name__ + ' Error: You need to call the load method first!')
         return next(self._loaded_chunks)
 
-class AsynchronousDataChunkLoader(AsynchronousDataLoader, DataChunkLoader):
+class ConcurrentDataChunkLoader(ConcurrentDataLoader, DataChunkLoader):
     """Loads chunks of data stored in an hdf5 chunk archive in a separate thread."""
     def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(AsynchronousDataChunkLoader, self).__init__(
+        super(ConcurrentDataChunkLoader, self).__init__(
             max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
 
-class PreloadingAsynchronousDataChunkLoader(PreloadingAsynchronousDataLoader, DataChunkLoader):
+class PreloadingConcurrentDataChunkLoader(PreloadingConcurrentDataLoader, DataChunkLoader):
     """Blocks in the parent thread until the chunks buffer in the RAM is initially filled."""
     def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(PreloadingAsynchronousDataChunkLoader, self).__init__(
+        super(PreloadingConcurrentDataChunkLoader, self).__init__(
             max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
 
 class SynchronizedDataChunkLoaders(DataLoader, DataGenerator, ArraySource):

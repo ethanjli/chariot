@@ -19,7 +19,7 @@ from data import data
 # THREADING
 
 class Thread(object):
-    """Abstract convenience class for work done asynchronously in a thread."""
+    """Abstract convenience class for work done concurrently in a thread."""
     def __init__(self):
         self._thread = None
         self._run = False
@@ -47,18 +47,19 @@ class Thread(object):
         Implement this."""
         pass
 
-    def run_sync(self):
-        """Perform the work synchronously."""
+    def run_serial(self):
+        """Perform the work in the current execution thread."""
         self._run = True
         self.on_run_start()
         while self._run:
             self.execute()
         self.on_run_finish()
 
-    def run_async(self):
+    def run_concurrent(self):
+        """Perform the work in a new concurrent thread."""
         if self._thread is not None:
             return
-        self._thread = threading.Thread(target=self.run_sync, name=self.name)
+        self._thread = threading.Thread(target=self.run_serial, name=self.name)
         self._thread.start()
 
     def terminate(self):
@@ -337,7 +338,7 @@ class ArrayDoubleBuffer(DoubleBuffer):
 
 class ArrayLoader(LoaderGenerator, data.ArraySource):
     """Loads numpy arrays sequentially in a separate process into shared memory.
-    PreloadingAsynchronousDataLoader should also implement the ArraySource interface."""
+    PreloadingConcurrentDataLoader should also implement the ArraySource interface."""
     def __init__(self, *args, **kwargs):
         super(ArrayLoader, self).__init__(ArrayDoubleBuffer(), *args, **kwargs)
 
@@ -373,8 +374,7 @@ class FakeChunk():
 
 class ChunkLoader(ArrayLoader):
     def __init__(self, *args, **kwargs):
-        super(ChunkLoader, self).__init__(data.AsynchronousDataChunkLoader,
-                                          *args, **kwargs)
+        super(ChunkLoader, self).__init__(data.ConcurrentDataChunkLoader, *args, **kwargs)
         self.lazy = False
 
     def _on_load(self, loaded_next, target_buffer):
