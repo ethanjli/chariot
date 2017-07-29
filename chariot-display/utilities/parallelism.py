@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 """Classes to enable painless process-level parallelism."""
-
+import os
+import signal
 import operator
 import multiprocessing
 from multiprocessing import Array, Value
@@ -178,6 +179,10 @@ class Process(object):
     def process_running(self):
         return self.__process is not None
 
+    @property
+    def pid(self):
+        return self.__process.pid
+
     # Child methods
 
     def on_run_start(self):
@@ -257,14 +262,20 @@ class Process(object):
         Implement this."""
         pass
 
-    def terminate(self):
+    def terminate(self, force_terminate=False):
         self.on_terminate()
         if not self.process_running:
             return
-        self.send_input(None)
-        self.__process.join()
+        if force_terminate:
+            self.__process.terminate()
+        else:
+            self.send_input(None)
+            self.__process.join()
         self.__process = None
         self.on_terminate_finish()
+
+    def kill(self, sig=signal.SIGINT):
+        os.kill(self.pid, sig)
 
 class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     """A Loader/Generator which runs in a separate process."""

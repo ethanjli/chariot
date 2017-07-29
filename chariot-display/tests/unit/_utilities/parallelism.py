@@ -23,10 +23,38 @@ class Process(parallelism.Process):
             time.sleep(0.05)
             self.send_output(output)
 
+class HangingProcess(parallelism.Process):
+    def __init__(self, test_case):
+        super(HangingProcess, self).__init__(1, 1)
+        self.test_case = test_case
+
+    def on_run_start(self):
+        self.send_output('started')
+
+    def execute(self, next_input):
+        if next_input == 'spin':
+            try:
+                for counter in range(100):
+                    time.sleep(0.05)
+                    if counter == 0:
+                        self.send_output('starting to spin')
+                    counter += 1
+                self.send_output((True, 'Hanging process should have caught SIGINT'))
+            except KeyboardInterrupt:
+                self.send_output((False, 'Hanging process caught SIGINT'))
+        elif next_input == 'hang_send_output':
+            self.send_output('ready to hang')
+            try:
+                self.send_output('hanging')
+                self.send_output((True, 'Hanging process should have caught SIGINT'))
+            except KeyboardInterrupt:
+                self.send_output((False, 'Hanging process caught SIGINT'))
+
 class TestProcess(unittest.TestCase):
     def setUp(self):
         self.tight_process = Process(1)
         self.loose_process = Process(11)
+        self.hanging_process = HangingProcess(self)
 
     def assert_full(self, queue):
         try:
@@ -41,6 +69,33 @@ class TestProcess(unittest.TestCase):
             self.assertFalse(True, 'Queue should have been empty')
         except Empty:
             pass
+
+    def test_interrupt_waiting_for_input(self):
+        self.hanging_process.run_parallel()
+        self.hanging_process.receive_output()
+        self.hanging_process.kill()
+        self.hanging_process.terminate()
+
+    def test_interrupt_hanging_send_output(self):
+        self.hanging_process.run_parallel()
+        self.hanging_process.receive_output()
+        self.hanging_process.send_input('hang_send_output')
+        self.hanging_process.receive_output()
+        self.hanging_process.kill()
+        self.hanging_process.receive_output()
+        assert_result = self.hanging_process.receive_output()
+        self.assertFalse(assert_result[0], assert_result[1])
+        self.hanging_process.terminate()
+
+    def test_interrupt_spinning(self):
+        self.hanging_process.run_parallel()
+        self.hanging_process.receive_output()
+        self.hanging_process.send_input('spin')
+        self.hanging_process.receive_output()
+        self.hanging_process.kill()
+        assert_result = self.hanging_process.receive_output()
+        self.assertFalse(assert_result[0], assert_result[1])
+        self.hanging_process.terminate()
 
     def test_terminate(self):
         self.tight_process.run_parallel()
@@ -84,6 +139,8 @@ class TestProcess(unittest.TestCase):
             self.tight_process.terminate()
         if self.loose_process.process_running:
             self.loose_process.terminate()
+        if self.hanging_process.process_running:
+            self.hanging_process.terminate(force_terminate=True)
 
 class ValueDoubleBuffer(parallelism.DoubleBuffer):
     def __init__(self):
