@@ -13,6 +13,46 @@ except ImportError:
 from data import data
 from utilities import parallelism
 
+class ChildException(Exception):
+    pass
+
+class TestExceptionListener(unittest.TestCase):
+    def setUp(self):
+        self.listener = parallelism.ExceptionListener('Parent')
+
+    def test_terminate(self):
+        self.listener.run_concurrent()
+        self.assertIsNotNone(self.listener._thread)
+        self.listener.terminate()
+        self.assertIsNone(self.listener._thread)
+
+    def test_raise(self):
+        try:
+            try:
+                self.listener.run_concurrent()
+                self.listener.send('Child', 12345, ChildException(), 'foobar')
+                time.sleep(1)
+                self.assertFalse(True, 'Uncaught exception')
+            except KeyboardInterrupt:
+                raise self.listener.exception['exception']
+        except ChildException:
+            pass
+
+    def test_interrupt(self):
+        try:
+            try:
+                self.listener.run_concurrent()
+                self.listener.send('Child', 12345, KeyboardInterrupt(), 'foobar')
+                time.sleep(1)
+                self.assertFalse(True, 'Uncaught KeyboardInterrupt')
+            except KeyboardInterrupt:
+                raise self.listener.exception['exception']
+        except KeyboardInterrupt:
+            pass
+
+    def tearDown(self):
+        self.listener.terminate()
+
 class Process(parallelism.Process):
     def __init__(self, queue_size):
         super(Process, self).__init__(queue_size, queue_size)
@@ -22,6 +62,10 @@ class Process(parallelism.Process):
             output = 2 * next_input[1]
             time.sleep(0.05)
             self.send_output(output)
+        elif next_input == 'runtime_exception':
+            raise ChildException()
+        elif next_input == 'keyboard_interrupt':
+            raise KeyboardInterrupt()
 
 class HangingProcess(parallelism.Process):
     def __init__(self, test_case):
@@ -49,6 +93,8 @@ class HangingProcess(parallelism.Process):
                 self.send_output((True, 'Hanging process should have caught SIGINT'))
             except KeyboardInterrupt:
                 self.send_output((False, 'Hanging process caught SIGINT'))
+        else:
+            raise NotImplementedError('Handler for input ' + next_input + ' not implemented')
 
 class TestProcess(unittest.TestCase):
     def setUp(self):
@@ -73,7 +119,17 @@ class TestProcess(unittest.TestCase):
     def test_interrupt_waiting_for_input(self):
         self.hanging_process.run_parallel()
         self.hanging_process.receive_output()
-        self.hanging_process.kill()
+        try:
+            try:
+                self.hanging_process.kill()
+                for _ in range(100):
+                    time.sleep(0.05)
+                self.assertFalse(True, 'Uncaught interrupt')
+            except KeyboardInterrupt:
+                raise self.hanging_process.exception['exception']
+            self.assertFalse(True, 'Incorrect exception')
+        except KeyboardInterrupt:
+            pass
         self.hanging_process.terminate()
 
     def test_interrupt_hanging_send_output(self):
@@ -97,6 +153,21 @@ class TestProcess(unittest.TestCase):
         self.assertFalse(assert_result[0], assert_result[1])
         self.hanging_process.terminate()
 
+    def test_runtime_exception_on_receive_output(self):
+        self.hanging_process.run_parallel()
+        self.hanging_process.receive_output()
+        try:
+            try:
+                self.hanging_process.send_input('unknown_input')
+                self.hanging_process.receive_output()
+                self.assertFalse(True, 'Uncaught interrupt')
+            except KeyboardInterrupt:
+                raise self.hanging_process.exception['exception']
+            self.assertFalse(True, 'Incorrect exception')
+        except NotImplementedError:
+            pass
+        self.hanging_process.terminate()
+
     def test_terminate(self):
         self.tight_process.run_parallel()
         self.assertTrue(self.tight_process.process_running, 'Incorrect process state')
@@ -111,7 +182,6 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(self.tight_process.receive_output(), i * 2,
                              'Incorrect process synchronization')
         self.assert_empty(self.tight_process._output_queue)
-        self.tight_process.terminate()
 
     def test_loose_execute(self):
         self.loose_process.run_parallel()
@@ -132,7 +202,6 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(self.loose_process.receive_output(), i * 2,
                              'Incorrect process synchronization')
         self.assert_empty(self.loose_process._output_queue)
-        self.loose_process.terminate()
 
     def tearDown(self):
         if self.tight_process.process_running:

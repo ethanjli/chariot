@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 """Classes to enable painless process-level parallelism."""
+import traceback
 import os
 import signal
 import operator
@@ -7,14 +8,19 @@ import multiprocessing
 from multiprocessing import Array, Value
 import ctypes
 try:
-        from Queue import Empty
+    from Queue import Empty
 except ImportError:
-        from queue import Empty
+    from queue import Empty
+try:
+    from _thread import interrupt_main
+except ImportError:
+    from thread import interrupt_main
 
 import numpy as np
 from numpy.ctypeslib import as_array
 
 from data import data
+import concurrency
 
 # WORKER POOLS
 
@@ -152,16 +158,65 @@ class DoubleBuffer(object):
         self.read_readable.clear()
         self.write_readable.clear()
 
+class ExceptionListener(concurrency.Thread):
+    """A thread which passes exceptions from an associated child process.
+    Listens for exceptions received by the send method from any process.
+    Upon receipt of an exception, saves exception information to the exception
+    attribute, and interrupts the main thread with a KeyboardInterrupt.
+    """
+    def __init__(self, process_name):
+        super(ExceptionListener, self).__init__()
+        self.process_name = process_name
+        self.queue = multiprocessing.Queue(1)
+        self.exception = None
+
+    def send(self, child_name, child_pid, e, traceback):
+        self.queue.put({
+            'child_name': child_name,
+            'child_pid': child_pid,
+            'exception': e,
+            'traceback': traceback
+        })
+
+    def receive_exception(self, block=True, timeout=0.1):
+        exception_received = False
+        try:
+            self.exception = self.queue.get(block, timeout)
+            exception_received = True
+        except Empty:
+            pass
+        if exception_received:
+            print('Interrupting main thread from ' +
+                  repr(self.exception['exception']) +
+                  ' raised in child ' + self.exception['child_name'] +
+                  ' (pid ' + str(self.exception['child_pid']) + '):\n' +
+                  self.exception['traceback'])
+            interrupt_main()
+
+    # From Thread
+
+    @property
+    def name(self):
+        return self.process_name + ' ' + self.__class__.__name__
+
+    def execute(self):
+        self.receive_exception()
+
+
 class Process(object):
-    """Abstract base class for processes synchronized over input and output queues.
+    """Abstract base class for child processes synchronized over input and output queues.
     Data in the input queue is processed in FIFO order.
     None in the input queue is a sentinel for the child process to exit.
+    Exceptions in the child process are saved in the exception property; uncaught
+    exceptions raised from the child process will interrupt the main thread with a
+    KeyboardInterrupt.
     """
     def __init__(self, max_input_queue_size, max_output_queue_size, *args, **kwargs):
         super(Process, self).__init__(*args, **kwargs)
         self.__process = None
         self._input_queue = multiprocessing.Queue(max_input_queue_size)
         self._output_queue = multiprocessing.Queue(max_output_queue_size)
+        self.__exception_listener = ExceptionListener(self.name)
 
     @property
     def name(self):
@@ -210,19 +265,35 @@ class Process(object):
     def send_output(self, next_output, block=True, timeout=None):
         self._output_queue.put(next_output, block, timeout)
 
+    def send_exception(self, child_name, child_pid, e, traceback):
+        self.__exception_listener.send(child_name, child_pid, e, traceback)
+
     def run_serial(self, block=True, timeout=1):
         """Perform the work in the current execution thread.
         Only usable if inputs and outputs are being exchanged with another thread."""
-        self.on_run_start()
-        while True:
-            next_input = self.receive_input(block, timeout)
-            if next_input is None:
-                break
-            else:
-                self.execute(next_input)
-        self.on_run_finish()
+        try:
+            self.on_run_start()
+            while True:
+                    next_input = self.receive_input(block, timeout)
+                    if next_input is None:
+                        break
+                    else:
+                        self.execute(next_input)
+            self.on_run_finish()
+        except BaseException as e:
+            print('Raising exception from child ' + self.name +
+                  ' (pid ' + str(self.pid) + ') to parent:')
+            print(repr(e))
+            traceback.print_exc()
+            self.send_exception(self.name, self.pid, e, traceback.format_exc())
 
     # Parent methods
+
+    @property
+    def exception(self):
+        """The last-raised exception.
+        If no exception has been raised, returns None."""
+        return self.__exception_listener.exception
 
     def on_run_parent_start(self):
         """Do any work in the parent when run_parallel is called.
@@ -230,21 +301,28 @@ class Process(object):
         pass
 
     def run_parallel(self):
-        """Perform the work in a new parallel process."""
+        """Perform the work in a new parallel process.
+        Catch KeyboardInterrupts and check the exception property to catch exceptions
+        from the child."""
         if self.process_running:
             return
         self.__process = multiprocessing.Process(
             target=self.run_serial, name=self.name
         )
+        self.__exception_listener.run_concurrent()
         self.__process.start()
         self.on_run_parent_start()
 
     def send_input(self, next_input, block=True, timeout=None):
         self._input_queue.put(next_input, block, timeout)
 
-    def receive_output(self, block=True, timeout=None):
-        next_output = self._output_queue.get(block, timeout)
-        return next_output
+    def receive_output(self, block=True, timeout=1):
+        while True:
+            try:
+                next_output = self._output_queue.get(block, timeout)
+                return next_output
+            except Empty:
+                pass
 
     def on_terminate(self):
         """Do any work in the parent right before termination.
@@ -260,6 +338,7 @@ class Process(object):
         self.on_terminate()
         if not self.process_running:
             return
+        self.__exception_listener.terminate()
         if force_terminate:
             self.__process.terminate()
         else:
@@ -344,6 +423,7 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
         self.double_buffer.release_locks()
         flush_queue(self._input_queue)
         flush_queue(self._output_queue)
+        flush_queue(self.__exception_queue)
 
     # From DataLoader
 
