@@ -287,13 +287,14 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
             self.process.terminate()
 
 class ValueLoader(data.DataLoader, data.DataGenerator):
-    def __init__(self):
+    def __init__(self, length):
         self.i = 0
+        self.length = length
 
     # From DataGenerator
 
     def next(self):
-        if self.i >= 10:
+        if self.i >= self.length:
             raise StopIteration
         result = self.i * 2
         self.i += 1
@@ -303,31 +304,45 @@ class ValueLoader(data.DataLoader, data.DataGenerator):
         self.i = 0
 
 class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
-    def __init__(self):
-        super(ValueLoaderGeneratorProcess, self).__init__(ValueDoubleBuffer(), ValueLoader)
+    def __init__(self, loader_length):
+        super(ValueLoaderGeneratorProcess, self).__init__(
+            ValueDoubleBuffer(), lambda: ValueLoader(loader_length))
 
     # From LoaderGeneratorProcess
 
-    def _on_load(self, loaded_next, buffer_id):
-        self.double_buffer.get_buffer(buffer_id).value = loaded_next
+    def _on_load(self, loaded_next):
+        # print 'child: writing next value', loaded_next, 'to shadow buffer'
+        self.double_buffer.shadow_buffer.value = loaded_next
+        return loaded_next
 
     def _process_result(self, result):
-        print 'processed result', self.double_buffer.current_buffer.value
+        # print 'parent: got processed result in current buffer'
         return self.double_buffer.current_buffer.value
 
-"""
 class TestLoaderGeneratorProcess(unittest.TestCase):
     def setUp(self):
-        self.loader = ValueLoaderGeneratorProcess()
+        self.null_loader = ValueLoaderGeneratorProcess(0)
+        self.short_loader = ValueLoaderGeneratorProcess(1)
+        self.double_loader = ValueLoaderGeneratorProcess(2)
+        self.loader = ValueLoaderGeneratorProcess(10)
         self.loader.load()
 
     def test_generation(self):
         for i in range(20):
-            self.assertEqual(next(self.loader), 2 * i,
-                             'Incorrect generation')
+            try:
+                result = next(self.loader)
+                print result, 2 * i
+                self.assertEqual(result, 2 * i, 'Incorrect generation')
+            except StopIteration:
+                self.assertEqual(i, 10, 'Incorrect StopIteration')
+                break
+        try:
+            next(self.loader)
+            self.assertFalse(True, 'Incorrect behavior past StopIteration')
+        except StopIteration:
+            pass
 
     def tearDown(self):
         if self.loader.process_running:
             self.loader.stop_loading()
-"""
 
