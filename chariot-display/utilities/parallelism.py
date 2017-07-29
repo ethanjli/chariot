@@ -7,9 +7,9 @@ import multiprocessing
 from multiprocessing import Value
 import ctypes
 try:
-    from Queue import Empty
+    from Queue import Empty, Full
 except ImportError:
-    from queue import Empty
+    from queue import Empty, Full
 try:
     from _thread import interrupt_main
 except ImportError:
@@ -90,6 +90,30 @@ def flush_queue(queue):
     except Empty:
         pass
 
+def get_queue_poll(queue, block=False, timeout=None):
+    """Gets the next item in the queue.
+    If block is True and timeout is not None, periodically stops polling the queue
+    so interrupts can be caught.
+    """
+    while block:
+        try:
+            return queue.get(block, timeout)
+        except Empty:
+            pass
+    return queue.get_nowait()
+
+def put_queue_poll(queue, obj, block=False, timeout=None):
+    """Gets the next item in the queue.
+    If block is True and timeout is not None, periodically stops polling the queue
+    so interrupts can be caught.
+    """
+    while block:
+        try:
+            return queue.put(obj, block, timeout)
+        except Empty:
+            pass
+    return queue.put_nowait(obj)
+
 class DoubleBuffer(object):
     """Abstract base class for double buffering.
     The read buffer is used for reading, while the write buffer is used for writing
@@ -166,13 +190,13 @@ class ExceptionListener(concurrency.Thread):
         self.queue = multiprocessing.Queue(1)
         self.exception = None
 
-    def send(self, child_name, child_pid, e, traceback):
-        self.queue.put({
+    def send(self, child_name, child_pid, e, traceback, block=True, timeout=1):
+        put_queue_poll(self.queue, {
             'child_name': child_name,
             'child_pid': child_pid,
             'exception': e,
             'traceback': traceback
-        })
+        }, block, timeout)
 
     def receive_exception(self, block=True, timeout=0.1):
         exception_received = False
@@ -258,15 +282,10 @@ class Process(object):
         termination with a max delay of 1 second if the child is already active and
         waiting for input when it receives an interrupt.
         """
-        while True:
-            try:
-                next_input = self._input_queue.get(block, timeout)
-                return next_input
-            except Empty:
-                pass
+        return get_queue_poll(self._input_queue, block, timeout)
 
-    def send_output(self, next_output, block=True, timeout=None):
-        self._output_queue.put(next_output, block, timeout)
+    def send_output(self, next_output, block=True, timeout=1):
+        put_queue_poll(self._output_queue, next_output, block, timeout)
 
     def send_exception(self, child_name, child_pid, e, traceback):
         self.__exception_listener.send(child_name, child_pid, e, traceback)
@@ -316,16 +335,11 @@ class Process(object):
         self.__process.start()
         self.on_run_parent_start()
 
-    def send_input(self, next_input, block=True, timeout=None):
-        self._input_queue.put(next_input, block, timeout)
+    def send_input(self, next_input, block=True, timeout=1):
+        put_queue_poll(self._input_queue, next_input, block, timeout)
 
     def receive_output(self, block=True, timeout=1):
-        while True:
-            try:
-                next_output = self._output_queue.get(block, timeout)
-                return next_output
-            except Empty:
-                pass
+        return get_queue_poll(self._output_queue, block, timeout)
 
     def on_terminate(self):
         """Do any work in the parent right before termination.
