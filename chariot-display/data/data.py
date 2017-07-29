@@ -49,12 +49,14 @@ class DataLoader(object):
 class ArraySource(object):
     """Abstract base interface for things which output constant-shape arrays."""
 
-    def get_array_ctype(self):
+    @property
+    def array_ctype(self):
         """Returns the ctype of the data stored in the array.
         Returns None if unknown."""
         return None
 
-    def get_array_shape(self):
+    @property
+    def array_shape(self):
         """Returns the shape of each array.
         Returns None if unknown."""
         return None
@@ -62,12 +64,14 @@ class ArraySource(object):
 class ArraysSource(object):
     """Abstract base interface for things which output constant-shape arrays of different shapes."""
 
-    def get_array_ctypes(self):
+    @property
+    def array_ctypes(self):
         """Returns the ctypes of the data stored in the arrays in a fixed order.
         Returns None if unknown."""
         return None
 
-    def get_array_shapes(self):
+    @property
+    def array_shapes(self):
         """Returns the shapes of each array in a fixed order.
         Returns None if unknown."""
         return None
@@ -258,10 +262,12 @@ class DataChunkLoader(DataLoader, DataGenerator, ArraySource):
 
     # From ArraySource
 
-    def get_array_ctype(self):
+    @property
+    def array_ctype(self):
         return ctypes.c_ubyte
 
-    def get_array_shape(self, cache={}):
+    @property
+    def array_shape(self, cache={}):
         if self.archive_path not in cache:
             with h5py.File(self.archive_path, 'r') as hf:
                 cache[self.archive_path] = hf['chunks']['0'].shape

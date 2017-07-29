@@ -209,12 +209,6 @@ class TestDoubleBuffer(unittest.TestCase):
         self.assertEqual(self.double_buffer.write_id, 1,
                          'Incorrect initialization')
 
-    def test_lock_access(self):
-        self.assertIs(self.double_buffer.read_lock, self.double_buffer.get_lock(0),
-                      'Incorrect lock access')
-        self.assertIs(self.double_buffer.write_lock, self.double_buffer.get_lock(1),
-                      'Incorrect lock access')
-
     def test_swap(self):
         self.double_buffer.read_buffer.value = 1
         self.double_buffer.swap()

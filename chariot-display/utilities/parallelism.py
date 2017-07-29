@@ -100,6 +100,12 @@ class DoubleBuffer(object):
         self._buffer_locks = [multiprocessing.Lock(), multiprocessing.Lock()]
         self._buffer_readable_events = [multiprocessing.Event(), multiprocessing.Event()]
 
+    def get_buffer(self, buffer_id):
+        """Gets the buffer at the specified id.
+        Implement this. Only Value and Array-backed references in the buffer will be synchronized.
+        """
+        pass
+
     def swap(self):
         self._buffer_id.value = 1 - self._buffer_id.value
 
@@ -127,22 +133,6 @@ class DoubleBuffer(object):
     def write_lock(self):
         return self._buffer_locks[self.write_id]
 
-    def get_buffer(self, buffer_id):
-        """Gets the buffer at the specified id.
-        Implement this. Only Value and Array-backed references in the buffer will be synchronized.
-        """
-        pass
-
-    def get_lock(self, buffer_id):
-        return self._buffer_locks[buffer_id]
-
-    def release_locks(self):
-        for lock in self._buffer_locks:
-            try:
-                lock.release()
-            except ValueError:
-                pass
-
     @property
     def read_readable(self):
         return self._buffer_readable_events[self.read_id]
@@ -151,8 +141,12 @@ class DoubleBuffer(object):
     def write_readable(self):
         return self._buffer_readable_events[self.write_id]
 
-    def get_readable_event(self, buffer_id):
-        return self._buffer_readable_events[buffer_id]
+    def release_locks(self):
+        for lock in self._buffer_locks:
+            try:
+                lock.release()
+            except ValueError:
+                pass
 
     def reset(self):
         self.read_readable.clear()
@@ -359,118 +353,6 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     def stop_loading(self):
         self.terminate()
 
-
-class LoaderGenerator(data.DataLoader, data.DataGenerator, Process):
-    """Mix-in for producing data in a separate process with double-buffering.
-    For proper multiple inheritance MRO, this should be the leftmost base class.
-
-    Method _on_load(self, loaded_next) needs to be implemented somewhere. It should
-    return some data as the result, or None if there is no additional data to return.
-    Method _process_result(self, result) needs to be implemented somewhere. It should
-    take the output of _on_load and return some data, or None if there is no additional
-    data to return.
-    """
-    def __init__(self, double_buffer, Loader, *args, **kwargs):
-        self._loader = Loader(*args, **kwargs)
-        self.__loader_process = None
-
-        # Input and output queues
-        self.__loader_process_commands = multiprocessing.Queue(1)
-        self.__loader_process_results = multiprocessing.Queue(1)
-
-        self._loader_ready = multiprocessing.Event()
-        self._buffer = double_buffer
-
-    # From DataGenerator
-
-    def next(self, block=True, timeout=1):
-        self._buffer.shadow_ready.wait()
-        while not self._buffer.current_lock.acquire(block, timeout):
-            pass
-        self._buffer.shadow_ready.clear()
-        self._buffer.shadow_lock.release()
-        self.__loader_process_commands.put(('load_next', self._buffer.shadow_id))
-
-        result = self.__loader_process_results.get()
-        if result['has_current']:
-            processed_result = self._process_result(result['result'])
-            self._buffer.swap()
-            return processed_result
-        else:
-            raise StopIteration
-
-    def reset(self):
-        self.stop_loading()
-        self._loader_ready.clear()
-        self._buffer.reset()
-        self._buffer.release_locks()
-        flush_queue(self.__loader_process_commands)
-        flush_queue(self.__loader_process_results)
-        super(LoaderGenerator, self).reset()
-
-    # From DataLoader
-
-    def load(self):
-        if self.__loader_process is not None:
-            print(self.__class__.__name__ + ' Warning: Already loading. Doing nothing.')
-            return
-        self.__loader_process = multiprocessing.Process(
-            target=self._load_next_when_requested, name=self.__class__.__name__)
-        self.__loader_process.start()
-        self.__loader_process_commands.put(('load_next', self._buffer.current_id))
-        self._buffer.shadow_lock.acquire()
-        self._loader_ready.wait()
-        self._buffer.ready.wait()
-
-    def stop_loading(self):
-        if self.__loader_process is None:
-            print(self.__class__.__name__ + ' Warning: Not currently loading. Doing nothing.')
-            return
-        print(self.__class__.__name__ + ': Stopping loading...')
-        self.__loader_process_commands.put(None)
-        self.__loader_process.join()
-        self.__loader_process = None
-        super(LoaderGenerator, self).stop_loading()
-
-    # In the child
-
-    def _load_next_when_requested(self, block=True, timeout=1):
-        self._loader.load()
-        self._loader_ready.set()
-        keep_loading = True
-        while True:
-            while True:
-                try:
-                    command = self.__loader_process_commands.get(block, timeout)
-                    break
-                except Empty:
-                    pass
-            if command is None:
-                break
-            elif command[0] == 'load_next':
-                if keep_loading:
-                    keep_loading = self._load_next(command[1])
-                self._buffer.ready.set()
-        self._loader.stop_loading()
-
-    def _load_next(self, buffer_id):
-        with self._buffer.get_lock(buffer_id):
-            keep_loading = True
-            try:
-                loaded_next = next(self._loader)
-                output = {
-                    'has_current': True,
-                    'result': self._on_load(loaded_next, buffer_id)
-                }
-            except StopIteration:
-                output = {
-                    'has_current': False
-                }
-                keep_loading = False
-            self._buffer.shadow_ready.set()
-            self.__loader_process_results.put(output)
-            return keep_loading
-
 # ARRAY LOADING
 
 class ArrayDoubleBuffer(DoubleBuffer):
@@ -501,7 +383,7 @@ class ArrayDoubleBuffer(DoubleBuffer):
     def get_array(self, buffer_id):
         return self._arrays[buffer_id]
 
-class ArrayLoader(LoaderGenerator, data.ArraySource):
+class ArrayLoader(LoaderGeneratorProcess, data.ArraySource):
     """Loads numpy arrays sequentially in a separate process into shared memory.
     PreloadingConcurrentDataLoader should also implement the ArraySource interface."""
     def __init__(self, *args, **kwargs):
@@ -521,10 +403,12 @@ class ArrayLoader(LoaderGenerator, data.ArraySource):
 
     # From ArraySource
 
-    def get_array_ctype(self):
+    @property
+    def array_ctype(self):
         return self._loader.get_array_ctype()
 
-    def get_array_shape(self):
+    @property
+    def array_shape(self):
         return self._loader.get_array_shape()
 
 # CHUNK LOADING
@@ -602,7 +486,7 @@ class PointCloudDoubleBuffer(DoubleBuffer):
     def get_num_points(self, buffer_id):
         return self._num_points[buffer_id]
 
-class PointCloudGenerator(LoaderGenerator):
+class PointCloudGenerator(LoaderGeneratorProcess):
     """Generates point clouds sequentially in a separate process into shared memory."""
     def __init__(self, *args, **kwargs):
         super(PointCloudGenerator, self).__init__(PointCloudDoubleBuffer(), *args, **kwargs)
@@ -721,7 +605,7 @@ class MeshDoubleBuffer(PointCloudDoubleBuffer):
     def get_num_faces(self, buffer_id):
         return self._num_faces[buffer_id]
 
-class PointCloudMesher(LoaderGenerator):
+class PointCloudMesher(LoaderGeneratorProcess):
     """Generates and meshes point clouds sequentially in a separate process into shared memory.
     Note: _on_load currently assumes that the point cloud consists of exactly two arrays."""
     def __init__(self, *args, **kwargs):
