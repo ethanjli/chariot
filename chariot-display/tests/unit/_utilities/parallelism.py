@@ -218,9 +218,9 @@ class ValueDoubleBuffer(parallelism.DoubleBuffer):
     def get_buffer(self, buffer_id):
         return self._values[buffer_id]
 
-class DoubleBufferedProcess(parallelism.Process):
+class DoubleBufferClientProcess(parallelism.Process):
     def __init__(self):
-        super(DoubleBufferedProcess, self).__init__(1, 1)
+        super(DoubleBufferClientProcess, self).__init__(1, 1)
         self.double_buffer = ValueDoubleBuffer()
 
     def on_run_start(self):
@@ -291,10 +291,10 @@ class TestDoubleBuffer(unittest.TestCase):
 
 class TestDoubleBufferSynchronization(unittest.TestCase):
     def parallelsafe_setUp(self):
-        # This is needed because the DoubleBuffer in DoubleBufferedProcess gets
+        # This is needed because the DoubleBuffer in DoubleBufferClientProcess gets
         # shared across multiple TestCases in tests.unit.parallel_all, which
         # we must avoid.
-        self.process = DoubleBufferedProcess()
+        self.process = DoubleBufferClientProcess()
         self.process.run_parallel()
         self.assertEqual(self.process.receive_output(), 'started',
                          'Incorrect initialization')
@@ -445,12 +445,16 @@ class ValueLoader(data.DataLoader, data.DataGenerator):
 class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
     def __init__(self, *args, **kwargs):
         super(ValueLoaderGeneratorProcess, self).__init__(
-            ValueDoubleBuffer, lambda: ValueLoader(*args, **kwargs))
+            lambda: ValueLoader(*args, **kwargs), ValueDoubleBuffer)
+
+    # From DoubleBufferedProcess
+
+    def on_write_to_buffer(self, data):
+        self.double_buffer.write_buffer.value = data
 
     # From LoaderGeneratorProcess
 
-    def _on_load(self, loaded_next):
-        self.double_buffer.write_buffer.value = loaded_next
+    def generate_output(self, loaded_next):
         return loaded_next
 
     def _process_result(self, result):
