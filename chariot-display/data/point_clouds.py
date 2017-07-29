@@ -1,5 +1,14 @@
 """Classes representing point clouds."""
+import multiprocessing
+from multiprocessing import Value, Array
+import ctypes
+import operator
+
 import scipy.io
+import numpy as np
+from numpy.ctypeslib import as_array
+
+from utilities import parallelism
 
 class PointCloud(object):
     def __init__(self):
@@ -24,7 +33,7 @@ class Sequence(object):
 
 # PARALLEL LOADING
 
-class PointCloudDoubleBuffer(DoubleBuffer):
+class PointCloudDoubleBuffer(parallelism.DoubleBuffer):
     def __init__(self, num_components=2):
         super(PointCloudDoubleBuffer, self).__init__()
         self._point_cloud_bases = [[None for _ in range(num_components)],
@@ -73,7 +82,7 @@ class PointCloudDoubleBuffer(DoubleBuffer):
     def get_num_points(self, buffer_id):
         return self._num_points[buffer_id]
 
-class PointCloudGenerator(LoaderGeneratorProcess):
+class PointCloudGenerator(parallelism.LoaderGeneratorProcess):
     """Generates point clouds sequentially in a separate process into shared memory."""
     def __init__(self, *args, **kwargs):
         super(PointCloudGenerator, self).__init__(PointCloudDoubleBuffer(), *args, **kwargs)
@@ -192,7 +201,7 @@ class MeshDoubleBuffer(PointCloudDoubleBuffer):
     def get_num_faces(self, buffer_id):
         return self._num_faces[buffer_id]
 
-class PointCloudMesher(LoaderGeneratorProcess):
+class PointCloudMesher(parallelism.LoaderGeneratorProcess):
     """Generates and meshes point clouds sequentially in a separate process into shared memory.
     Note: _on_load currently assumes that the point cloud consists of exactly two arrays."""
     def __init__(self, *args, **kwargs):
