@@ -499,7 +499,6 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
         for i in range(length):
             self.assert_stopiteration('Missing StopIteration')
 
-    """
     def test_null_generation(self):
         sys.stdout.write('null[')
         for random_floor in self.random_floors:
@@ -569,7 +568,6 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
                         sys.stdout.write('.')
                     sys.stdout.write(']')
         print(']')
-    """
 
     def tearDown(self):
         if self.loader.process_running:
