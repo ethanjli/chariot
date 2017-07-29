@@ -1,4 +1,4 @@
-"""Classes for loading chunked data concurrently in separate threads."""
+"""Classes for loading data concurrently in separate threads."""
 import threading
 try:
         from Queue import Queue, Full

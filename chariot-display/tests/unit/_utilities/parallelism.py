@@ -434,7 +434,7 @@ class ValueLoader(data.DataLoader, data.DataGenerator):
 class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
     def __init__(self, *args, **kwargs):
         super(ValueLoaderGeneratorProcess, self).__init__(
-            ValueDoubleBuffer(), lambda: ValueLoader(*args, **kwargs))
+            ValueDoubleBuffer, lambda: ValueLoader(*args, **kwargs))
 
     # From LoaderGeneratorProcess
 

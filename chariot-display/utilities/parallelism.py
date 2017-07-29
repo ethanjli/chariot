@@ -352,9 +352,9 @@ class Process(object):
 
 class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     """A Loader/Generator which runs in a separate process."""
-    def __init__(self, double_buffer, LoaderGeneratorFactory, *args, **kwargs):
+    def __init__(self, DoubleBufferFactory, LoaderGeneratorFactory, *args, **kwargs):
         super(LoaderGeneratorProcess, self).__init__(1, 1, *args, **kwargs)
-        self.double_buffer = double_buffer
+        self.double_buffer = DoubleBufferFactory()
         self.loader = LoaderGeneratorFactory()
         self.buffer_ready = multiprocessing.Event()
 
