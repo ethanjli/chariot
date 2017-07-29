@@ -81,19 +81,13 @@ class Workset():
             pool.join()
             print('Finished.')
 
-# SYNCHRONIZED PARALLELISM
+# SYNCHRONIZATION WITH POLLING
 
-def flush_queue(queue):
-    try:
-        for item in iter(queue.get_nowait, None):
-            pass
-    except Empty:
-        pass
-
-def get_queue_poll(queue, block=False, timeout=None):
+def get_queue_poll(queue, block=True, timeout=None):
     """Gets the next item in the queue.
-    If block is True and timeout is not None, periodically stops polling the queue
+    If block is True and timeout is not None, periodically polls for interrupts while waiting
     so interrupts can be caught.
+    If block is False, raises Empty if there is nothing to get.
     """
     while block:
         try:
@@ -102,10 +96,11 @@ def get_queue_poll(queue, block=False, timeout=None):
             pass
     return queue.get_nowait()
 
-def put_queue_poll(queue, obj, block=False, timeout=None):
+def put_queue_poll(queue, obj, block=True, timeout=None):
     """Gets the next item in the queue.
-    If block is True and timeout is not None, periodically stops polling the queue
+    If block is True and timeout is not None, periodically polls for interrupts while waiting
     so interrupts can be caught.
+    If block is False, raises Empty if there is nowhere to put.
     """
     while block:
         try:
@@ -113,6 +108,36 @@ def put_queue_poll(queue, obj, block=False, timeout=None):
         except Empty:
             pass
     return queue.put_nowait(obj)
+
+def wait_event_poll(event, timeout=None):
+    """Sleeps until the event is set.
+    If block is True and timeout is not None, periodically polls for interrupts while waiting
+    so interrupts can be caught.
+    """
+    while not event.wait(timeout):
+        pass
+
+def acquire_lock_poll(lock, block=True, timeout=None):
+    """Acquires the lock.
+    If block is True and timeout is not None, periodically polls for interrupts while waiting
+    so interrupts can be caught.
+    If block is False, returns whether the lock acquisition successfully completed.
+    """
+    if block:
+        while not lock.acquire(block, timeout):
+            pass
+        return True
+    else:
+        return lock.acquire(False)
+
+# SYNCHRONIZED PARALLELISM
+
+def flush_queue(queue):
+    try:
+        for item in iter(queue.get_nowait, None):
+            pass
+    except Empty:
+        pass
 
 class DoubleBuffer(object):
     """Abstract base class for double buffering.
@@ -177,6 +202,8 @@ class DoubleBuffer(object):
     def reset(self):
         self.read_readable.clear()
         self.write_readable.clear()
+        self.release_locks()
+        self._buffer_id.value = 0
 
 class ExceptionListener(concurrency.Thread):
     """A thread which passes exceptions from an associated child process.
@@ -355,13 +382,13 @@ class Process(object):
         self.on_terminate()
         if not self.process_running:
             return
-        self.__exception_listener.terminate()
-        self.__exception_listener.reset()
         if force_terminate:
             self.__process.terminate()
         else:
             self.send_input(None)
             self.__process.join()
+        self.__exception_listener.terminate()
+        self.__exception_listener.reset()
         self.__process = None
         self.on_terminate_finish()
 
@@ -381,13 +408,13 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     def _load_next(self):
         try:
             loaded_next = next(self.loader)
-            # Lock the write buffer to write to it
-            with self.double_buffer.write_lock:
-                output = {
-                    'next': self._on_load(loaded_next)
-                }
-                self.double_buffer.write_readable.set()
-                self.send_output(output)
+            acquire_lock_poll(self.double_buffer.write_lock, block=True, timeout=None)
+            output = {
+                'next': self._on_load(loaded_next)
+            }
+            self.double_buffer.write_readable.set()
+            self.double_buffer.write_lock.release()
+            self.send_output(output)
         except StopIteration:
             self.double_buffer.write_readable.set()
             self.send_output(None)
@@ -395,7 +422,8 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     # From Process
 
     def on_run_parent_start(self):
-        self.double_buffer.read_lock.acquire()  # prepare for the assumptions of the next() call
+        # Set up assumptions/loop invariants of the next() call
+        acquire_lock_poll(self.double_buffer.read_lock, block=True, timeout=1)
         self.send_input('next')  # let child load the first value into the write buffer
 
     def on_terminate_finish(self):
@@ -413,12 +441,11 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
 
     # From DataGenerator
 
-    def next(self, block=True, timeout=1):
+    def next(self):
         # Assumes the parent has the read lock and no longer needs the read buffer's data
-        self.double_buffer.write_readable.wait()
+        wait_event_poll(self.double_buffer.write_readable)
         # Lock the write buffer so we can read from it when it becomes a read buffer
-        while not self.double_buffer.write_lock.acquire(block, timeout):
-            pass
+        acquire_lock_poll(self.double_buffer.write_lock, block=True, timeout=1)
         # Swap buffers, so that our locked buffer becomes the new read buffer
         self.double_buffer.swap()
         # Reset and release our unneeded buffer as the new write buffer
@@ -438,7 +465,6 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     def reset(self):
         self.stop_loading()
         self.double_buffer.reset()
-        self.double_buffer.release_locks()
         flush_queue(self._input_queue)
         flush_queue(self._output_queue)
 

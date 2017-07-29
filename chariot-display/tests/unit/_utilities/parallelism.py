@@ -223,6 +223,9 @@ class DoubleBufferedProcess(parallelism.Process):
         super(DoubleBufferedProcess, self).__init__(1, 1)
         self.double_buffer = ValueDoubleBuffer()
 
+    def on_run_start(self):
+        self.send_output('started')
+
     def execute(self, next_input):
         if next_input[0] == 'swap':
             self.double_buffer.swap()
@@ -287,9 +290,14 @@ class TestDoubleBuffer(unittest.TestCase):
                          'Incorrect double buffer swap')
 
 class TestDoubleBufferSynchronization(unittest.TestCase):
-    def setUp(self):
+    def parallelsafe_setUp(self):
+        # This is needed because the DoubleBuffer in DoubleBufferedProcess gets
+        # shared across multiple TestCases in tests.unit.parallel_all, which
+        # we must avoid.
         self.process = DoubleBufferedProcess()
         self.process.run_parallel()
+        self.assertEqual(self.process.receive_output(), 'started',
+                         'Incorrect initialization')
 
     def is_unlocked(self, lock):
         previously_unlocked = lock.acquire(False)
@@ -315,8 +323,8 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
                          ('read_value', 'write', write_expected),
                          error_message)
 
-    """
     def test_value_synchronization_to_child(self):
+        self.parallelsafe_setUp()
         self.process.double_buffer.read_buffer.value = 1
         self.process.double_buffer.write_buffer.value = 2
         self.assert_child_value(1, 2, 'Incorrect value synchronization from parent to child')
@@ -328,6 +336,7 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.assert_child_value(3, 4, 'Incorrect value synchronization from parent to child')
 
     def test_value_synchronization_from_child(self):
+        self.parallelsafe_setUp()
         self.round_trip('write_value', 'read', 1)
         self.round_trip('write_value', 'write', 2)
         self.assert_parent_value(1, 2, 'Incorrect value synchronization from child to parent')
@@ -338,6 +347,7 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.assert_parent_value(3, 4, 'Incorrect value synchronization from child to parent')
 
     def test_parent_swap(self):
+        self.parallelsafe_setUp()
         self.process.double_buffer.read_buffer.value = 1
         self.process.double_buffer.write_buffer.value = 2
         self.process.double_buffer.swap()
@@ -365,10 +375,12 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
                          error_message)
 
     def test_locking_initialization(self):
+        self.parallelsafe_setUp()
         self.assert_parent_lock_state(True, True, 'Incorrect lock initialization in parent')
         self.assert_child_lock_state(True, True, 'Incorrect lock initialization in child')
 
     def test_locking_parent(self):
+        self.parallelsafe_setUp()
         self.process.double_buffer.read_lock.acquire()
         self.assert_child_lock_state(False, True,
                                      'Incorrect lock synchronization from parent to child')
@@ -383,6 +395,7 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
                                      'Incorrect lock synchronization from parent to child')
 
     def test_locking_child(self):
+        self.parallelsafe_setUp()
         self.round_trip('acquire_lock', 'read')
         self.assert_parent_lock_state(False, True,
                                       'Incorrect lock synchronization from child to parent')
@@ -395,7 +408,6 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.round_trip('release_lock', 'write')
         self.assert_parent_lock_state(True, True,
                                       'Incorrect lock synchronization from child to parent')
-        """
 
     def tearDown(self):
         if self.process.process_running:
