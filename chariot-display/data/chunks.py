@@ -5,11 +5,22 @@ import h5py
 
 from utilities import util
 import data
+import arrays
 import concurrent
+
+def save_chunk(path, chunk, chunk_index, chunk_attributes):
+    hf = h5py.File(path, 'a')
+    chunks = hf.require_group('chunks')
+    chunk = chunks.create_dataset(str(chunk_index), data=chunk)
+    for (name, value) in chunk_attributes.items():
+        chunk.attrs[name] = value
+    hf.close()
 
 def load_chunk_array(chunk):
     loaded = chunk[()]
     return loaded
+
+# LOADING
 
 class Loader(data.DataLoader, data.DataGenerator, data.ArraySource):
     """Loads chunks of data stored in an hdf5 chunk archive.
@@ -113,18 +124,6 @@ class PreloadingLoader(Loader):
             raise RuntimeError(self.__class__.__name__ + ' Error: You need to call the load method first!')
         return next(self._loaded_chunks)
 
-class ConcurrentLoader(concurrent.Loader, Loader):
-    """Loads chunks of data stored in an hdf5 chunk archive in a separate thread."""
-    def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(ConcurrentLoader, self).__init__(
-            max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
-
-class PreloadingConcurrentLoader(concurrent.PreloadingLoader, Loader):
-    """Blocks in the parent thread until the chunks buffer in the RAM is initially filled."""
-    def __init__(self, archive_path, max_size=2, *args, **kwargs):
-        super(PreloadingConcurrentLoader, self).__init__(
-            max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
-
 class SynchronizedLoaders(data.DataLoader, data.DataGenerator, data.ArraySource):
     """Loads chunks of data split across multiple hdf5 chunk archives.
     Archives should have the chunks and chunk contents indexed identically.
@@ -160,10 +159,41 @@ class SynchronizedLoaders(data.DataLoader, data.DataGenerator, data.ArraySource)
     def next(self):
         return [next(chunk_loader) for chunk_loader in self._chunk_loaders]
 
-def save_chunk(path, chunk, chunk_index, chunk_attributes):
-    hf = h5py.File(path, 'a')
-    chunks = hf.require_group('chunks')
-    chunk = chunks.create_dataset(str(chunk_index), data=chunk)
-    for (name, value) in chunk_attributes.items():
-        chunk.attrs[name] = value
-    hf.close()
+# CONCURRENT LOADING
+
+class ConcurrentLoader(concurrent.Loader, Loader):
+    """Loads chunks of data stored in an hdf5 chunk archive in a separate thread."""
+    def __init__(self, archive_path, max_size=2, *args, **kwargs):
+        super(ConcurrentLoader, self).__init__(
+            max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
+
+class PreloadingConcurrentLoader(concurrent.PreloadingLoader, Loader):
+    """Blocks in the parent thread until the chunks buffer in the RAM is initially filled."""
+    def __init__(self, archive_path, max_size=2, *args, **kwargs):
+        super(PreloadingConcurrentLoader, self).__init__(
+            max_size, discard_upon_none=False, archive_path=archive_path, *args, **kwargs)
+
+# PARALLEL LOADING
+
+class FakeChunk():
+    def __init__(self, array, attrs):
+        self._array = array
+        self.attrs = attrs
+
+    def __getitem__(self, key):
+        return self._array.__getitem__(key)
+
+class ParallelLoader(arrays.ParallelLoader):
+    def __init__(self, *args, **kwargs):
+        super(ParallelLoader, self).__init__(data.ConcurrentDataChunkLoader, *args, **kwargs)
+        self.lazy = False
+
+    def _on_load(self, loaded_next, target_buffer):
+        super(ParallelLoader, self)._on_load(loaded_next[1], target_buffer)
+        attrs = loaded_next[0].attrs
+        return dict(attrs)
+
+    def _process_result(self, result):
+        array = self._buffer.current_array
+        return (FakeChunk(array, result), array)
+

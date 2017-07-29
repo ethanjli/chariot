@@ -3,9 +3,8 @@
 import traceback
 import os
 import signal
-import operator
 import multiprocessing
-from multiprocessing import Array, Value
+from multiprocessing import Value
 import ctypes
 try:
     from Queue import Empty
@@ -15,9 +14,6 @@ try:
     from _thread import interrupt_main
 except ImportError:
     from thread import interrupt_main
-
-import numpy as np
-from numpy.ctypeslib import as_array
 
 from data import data
 import concurrency
@@ -193,6 +189,11 @@ class ExceptionListener(concurrency.Thread):
                   self.exception['traceback'])
             interrupt_main()
 
+    def reset(self, clear_exception=False):
+        flush_queue(self.queue)
+        if clear_exception:
+            self.exception = None
+
     # From Thread
 
     @property
@@ -202,6 +203,8 @@ class ExceptionListener(concurrency.Thread):
     def execute(self):
         self.receive_exception()
 
+    def on_run_parent_start(self):
+        self.exception = None
 
 class Process(object):
     """Abstract base class for child processes synchronized over input and output queues.
@@ -274,11 +277,11 @@ class Process(object):
         try:
             self.on_run_start()
             while True:
-                    next_input = self.receive_input(block, timeout)
-                    if next_input is None:
-                        break
-                    else:
-                        self.execute(next_input)
+                next_input = self.receive_input(block, timeout)
+                if next_input is None:
+                    break
+                else:
+                    self.execute(next_input)
             self.on_run_finish()
         except BaseException as e:
             print('Raising exception from child ' + self.name +
@@ -339,6 +342,7 @@ class Process(object):
         if not self.process_running:
             return
         self.__exception_listener.terminate()
+        self.__exception_listener.reset()
         if force_terminate:
             self.__process.terminate()
         else:
@@ -423,7 +427,6 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
         self.double_buffer.release_locks()
         flush_queue(self._input_queue)
         flush_queue(self._output_queue)
-        flush_queue(self.__exception_queue)
 
     # From DataLoader
 
@@ -433,340 +436,3 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     def stop_loading(self):
         self.terminate()
 
-# ARRAY LOADING
-
-class ArrayDoubleBuffer(DoubleBuffer):
-    def __init__(self):
-        super(ArrayDoubleBuffer, self).__init__()
-        self._array_bases = [None, None]
-        self._arrays = [None, None]
-
-    def initialize(self, ctype, shape):
-        num_elements = reduce(operator.mul, shape, 1)
-
-        self._array_bases[0] = Array(ctype, num_elements)
-        self._array_bases[1] = Array(ctype, num_elements)
-
-        self._arrays[0] = np.ctypeslib.as_array(
-            self._array_bases[0].get_obj()).reshape(*shape)
-        self._arrays[1] = as_array(
-            self._array_bases[1].get_obj()).reshape(*shape)
-
-    @property
-    def current_array(self):
-        return self._arrays[self.current_id]
-
-    @property
-    def shadow_array(self):
-        return self._arrays[self.shadow_id]
-
-    def get_array(self, buffer_id):
-        return self._arrays[buffer_id]
-
-class ArrayLoader(LoaderGeneratorProcess, data.ArraySource):
-    """Loads numpy arrays sequentially in a separate process into shared memory.
-    PreloadingConcurrentDataLoader should also implement the ArraySource interface."""
-    def __init__(self, *args, **kwargs):
-        super(ArrayLoader, self).__init__(ArrayDoubleBuffer(), *args, **kwargs)
-
-        self._buffer.initialize(self._loader.get_array_ctype(),
-                                self._loader.get_array_shape())
-
-    # From LoaderGenerator
-
-    def _on_load(self, loaded_next, target_buffer):
-        np.copyto(self._buffer.get_array(target_buffer), loaded_next)
-        return None
-
-    def _process_result(self, result):
-        return self._buffer.current_array
-
-    # From ArraySource
-
-    @property
-    def array_ctype(self):
-        return self._loader.get_array_ctype()
-
-    @property
-    def array_shape(self):
-        return self._loader.get_array_shape()
-
-# CHUNK LOADING
-
-class FakeChunk():
-    def __init__(self, array, attrs):
-        self._array = array
-        self.attrs = attrs
-
-    def __getitem__(self, key):
-        return self._array.__getitem__(key)
-
-class ChunkLoader(ArrayLoader):
-    def __init__(self, *args, **kwargs):
-        super(ChunkLoader, self).__init__(data.ConcurrentDataChunkLoader, *args, **kwargs)
-        self.lazy = False
-
-    def _on_load(self, loaded_next, target_buffer):
-        super(ChunkLoader, self)._on_load(loaded_next[1], target_buffer)
-        attrs = loaded_next[0].attrs
-        return dict(attrs)
-
-    def _process_result(self, result):
-        array = self._buffer.current_array
-        return (FakeChunk(array, result), array)
-
-# POINT CLOUD GENERATION
-
-class PointCloudDoubleBuffer(DoubleBuffer):
-    def __init__(self, num_components=2):
-        super(PointCloudDoubleBuffer, self).__init__()
-        self._point_cloud_bases = [[None for _ in range(num_components)],
-                                   [None for _ in range(num_components)]]
-        self._point_clouds = [[None for _ in range(num_components)],
-                              [None for _ in range(num_components)]]
-        self._num_points = [None, None]
-
-    def initialize(self, ctype, shape):
-        num_elements = reduce(operator.mul, shape, 1)
-
-        self._locks = [multiprocessing.RLock(), multiprocessing.RLock()]
-
-        self._point_cloud_bases[0] = [Array(ctype, num_elements, lock=self._locks[0])
-                                      for _ in range(len(self._point_cloud_bases[0]))]
-        self._point_cloud_bases[1] = [Array(ctype, num_elements, lock=self._locks[1])
-                                      for _ in range(len(self._point_cloud_bases[1]))]
-
-        self._point_clouds[0] = [as_array(base.get_obj()).reshape(*shape)
-                                 for base in self._point_cloud_bases[0]]
-        self._point_clouds[1] = [as_array(base.get_obj()).reshape(*shape)
-                                 for base in self._point_cloud_bases[1]]
-
-        self._num_points[0] = Value(ctypes.c_int, 0, lock=self._locks[0])
-        self._num_points[1] = Value(ctypes.c_int, 0, lock=self._locks[1])
-
-    @property
-    def current_point_cloud(self):
-        return self._point_clouds[self.current_id]
-
-    @property
-    def shadow_point_cloud(self):
-        return self._point_clouds[self.shadow_id]
-
-    @property
-    def num_current_points(self):
-        return self._num_points[self.current_id]
-
-    @property
-    def num_shadow_points(self):
-        return self._num_points[self.shadow_id]
-
-    def get_point_cloud(self, buffer_id):
-        return self._point_clouds[buffer_id]
-
-    def get_num_points(self, buffer_id):
-        return self._num_points[buffer_id]
-
-class PointCloudGenerator(LoaderGeneratorProcess):
-    """Generates point clouds sequentially in a separate process into shared memory."""
-    def __init__(self, *args, **kwargs):
-        super(PointCloudGenerator, self).__init__(PointCloudDoubleBuffer(), *args, **kwargs)
-
-        self._loader.load()  # Sometimes needed to calculate the array shape
-        self._loader.stop_loading()  # We want to start the loader from our child process so we can join it
-        self._loader.reset()
-        self._buffer.initialize(self._loader.get_array_ctype(),
-                                self._loader.get_array_shape())
-
-    @property
-    def time_range(self):
-        return self._loader.time_range
-
-    def get_times(self):
-        return self._loader.get_times()
-
-    # From LoaderGenerator
-
-    def _on_load(self, loaded_next, target_buffer):
-        num_points = loaded_next[0].shape[0]
-        num_allowed_points = self.get_array_shape()[0]
-        if num_points > num_allowed_points:
-            print(self.__class__.__name__ + ' Warning: buffer can only hold ' +
-                  str(num_allowed_points) + ' of the ' + str(num_points) +
-                  ' points in the cloud!')
-        num_points = min(num_points, num_allowed_points)
-        self._buffer.get_num_points(target_buffer).value = num_points
-        for (index, array) in enumerate(loaded_next):
-            np.copyto(self._buffer.get_point_cloud(target_buffer)[index][:num_points],
-                      array[:num_points])
-        return None
-
-    def _process_result(self, result):
-        num_points = self._buffer.num_current_points.value
-        return [array[:num_points] for array in self._buffer.current_point_cloud]
-
-    def reset(self):
-        super(PointCloudGenerator, self).reset()
-        self._loader.reset()
-
-    # From ArraySource
-
-    def get_array_ctype(self):
-        return self._loader.get_array_ctype()
-
-    def get_array_shape(self):
-        return self._loader.get_array_shape()
-
-# POINT CLOUD AND MESH GENERATION
-
-class MeshDoubleBuffer(PointCloudDoubleBuffer):
-    def __init__(self, *args, **kwargs):
-        super(MeshDoubleBuffer, self).__init__(*args, **kwargs)
-        self._mesh_bases = [[None, None, None],
-                            [None, None, None]]
-        self._meshes = [[None, None, None],
-                        [None, None, None]]
-        self._num_vertices = [None, None]
-        self._num_faces = [None, None]
-
-    def initialize(self, array_ctypes, array_shapes):
-        super(MeshDoubleBuffer, self).initialize(array_ctypes[0], array_shapes[0])
-
-        num_vertices = reduce(operator.mul, array_shapes[1], 1)
-        num_faces = reduce(operator.mul, array_shapes[2], 1)
-        self._mesh_bases[0] = [Array(array_ctypes[1], num_vertices, lock=self._locks[0]),
-                               Array(array_ctypes[1], num_vertices, lock=self._locks[0]),
-                               Array(array_ctypes[2], num_faces, lock=self._locks[0])]
-        self._mesh_bases[1] = [Array(array_ctypes[1], num_vertices, lock=self._locks[1]),
-                               Array(array_ctypes[1], num_vertices, lock=self._locks[1]),
-                               Array(array_ctypes[2], num_faces, lock=self._locks[1])]
-
-        self._meshes[0] = [as_array(self._mesh_bases[0][0].get_obj()).reshape(*array_shapes[1]),
-                           as_array(self._mesh_bases[0][1].get_obj()).reshape(*array_shapes[1]),
-                           as_array(self._mesh_bases[0][2].get_obj()).reshape(*array_shapes[2])]
-        self._meshes[1] = [as_array(self._mesh_bases[1][0].get_obj()).reshape(*array_shapes[1]),
-                           as_array(self._mesh_bases[1][1].get_obj()).reshape(*array_shapes[1]),
-                           as_array(self._mesh_bases[1][2].get_obj()).reshape(*array_shapes[2])]
-
-        self._num_vertices[0] = Value(ctypes.c_int, 0, lock=self._locks[0])
-        self._num_vertices[1] = Value(ctypes.c_int, 0, lock=self._locks[1])
-        self._num_faces[0] = Value(ctypes.c_int, 0, lock=self._locks[0])
-        self._num_faces[1] = Value(ctypes.c_int, 0, lock=self._locks[1])
-
-    @property
-    def current_mesh(self):
-        return self._meshes[self.current_id]
-
-    @property
-    def shadow_mesh(self):
-        return self._meshes[self.shadow_id]
-
-    @property
-    def num_current_vertices(self):
-        return self._num_vertices[self.current_id]
-
-    @property
-    def num_shadow_vertices(self):
-        return self._num_vertices[self.shadow_id]
-
-    @property
-    def num_current_faces(self):
-        return self._num_faces[self.current_id]
-
-    @property
-    def num_shadow_faces(self):
-        return self._num_faces[self.shadow_id]
-
-    def get_mesh(self, buffer_id):
-        return self._meshes[buffer_id]
-
-    def get_num_vertices(self, buffer_id):
-        return self._num_vertices[buffer_id]
-
-    def get_num_faces(self, buffer_id):
-        return self._num_faces[buffer_id]
-
-class PointCloudMesher(LoaderGeneratorProcess):
-    """Generates and meshes point clouds sequentially in a separate process into shared memory.
-    Note: _on_load currently assumes that the point cloud consists of exactly two arrays."""
-    def __init__(self, *args, **kwargs):
-        super(PointCloudMesher, self).__init__(MeshDoubleBuffer(), *args, **kwargs)
-
-        self._loader.load()  # Sometimes needed to calculate the array shape
-        self._loader.stop_loading()  # We want to start the loader from our child process so we can join it
-        self._loader.reset()
-        self._buffer.initialize(self._loader.get_array_ctypes(),
-                                self._loader.get_array_shapes())
-
-    @property
-    def time_range(self):
-        return self._loader.time_range
-
-    def get_times(self):
-        return self._loader.get_times()
-
-    # From LoaderGenerator
-
-    def _on_load(self, loaded_next, target_buffer):
-        # Point cloud
-        num_points = loaded_next[0].shape[0]
-        num_allowed_points = self.get_array_shapes()[0][0]
-        if num_points > num_allowed_points:
-            print(self.__class__.__name__ + ' Warning: buffer can only hold ' +
-                  str(num_allowed_points) + ' of the ' + str(num_points) +
-                  ' points in the cloud!')
-        num_points = min(num_points, num_allowed_points)
-        self._buffer.get_num_points(target_buffer).value = num_points
-        # This is the section which assumes exactly two arrays in the point cloud part
-        np.copyto(self._buffer.get_point_cloud(target_buffer)[0][:num_points],
-                  loaded_next[0][:num_points])
-        np.copyto(self._buffer.get_point_cloud(target_buffer)[1][:num_points],
-                  loaded_next[1][:num_points])
-
-        # Mesh
-        num_vertices = loaded_next[2].shape[0]
-        num_allowed_vertices = self.get_array_shapes()[1][0]
-        if num_vertices > num_allowed_vertices:
-            print(self.__class__.__name__ + ' Warning: buffer can only hold ' +
-                  str(num_allowed_vertices) + ' of the ' + str(num_vertices) +
-                  ' vertices in the mesh!')
-        num_vertices = min(num_vertices, num_allowed_vertices)
-        self._buffer.get_num_vertices(target_buffer).value = num_vertices
-        np.copyto(self._buffer.get_mesh(target_buffer)[0][:num_vertices],
-                  loaded_next[2][:num_vertices])
-        np.copyto(self._buffer.get_mesh(target_buffer)[1][:num_vertices],
-                  loaded_next[3][:num_vertices])
-        num_faces = loaded_next[4].shape[0]
-        num_allowed_faces = self.get_array_shapes()[2][0]
-        if num_faces > num_allowed_faces:
-            print(self.__class__.__name__ + ' Warning: buffer can only hold ' +
-                  str(num_allowed_faces) + ' of the ' + str(num_faces) +
-                  ' faces in the mesh!')
-        num_faces = min(num_faces, num_allowed_faces)
-        self._buffer.get_num_faces(target_buffer).value = num_faces
-        np.copyto(self._buffer.get_mesh(target_buffer)[2][:num_faces],
-                  loaded_next[4][:num_faces])
-        return None
-
-    def _process_result(self, result):
-        # Point cloud
-        num_points = self._buffer.num_current_points.value
-        arrays = [array[:num_points] for array in self._buffer.current_point_cloud]
-
-        # Mesh
-        num_vertices = self._buffer.num_current_vertices.value
-        num_faces = self._buffer.num_current_faces.value
-        mesh = self._buffer.current_mesh
-        arrays.extend([mesh[0][:num_vertices], mesh[1][:num_vertices], mesh[2][:num_faces]])
-        return arrays
-
-    def reset(self):
-        super(PointCloudMesher, self).reset()
-        self._loader.reset()
-
-    # From ArraysSource
-
-    def get_array_ctypes(self):
-        return self._loader.get_array_ctypes()
-
-    def get_array_shapes(self):
-        return self._loader.get_array_shapes()

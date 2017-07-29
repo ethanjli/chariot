@@ -492,16 +492,16 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
         sys.stdout.write('null[')
         for random_floor in self.random_floors:
             for initialization_delay in self.initialization_delays:
+                self.loader = ValueLoaderGeneratorProcess(
+                    0, random_floor, initialization_delay)
                 for first_next_delay in self.first_next_delays:
                     sys.stdout.write('[')
                     for _ in range(self.repetitions):
-                        self.loader = ValueLoaderGeneratorProcess(
-                            0, random_floor, initialization_delay)
                         self.loader.load()
                         time.sleep(random.uniform(first_next_delay * random_floor,
                                                   first_next_delay))
                         self.assert_short_generation(0, random_floor, first_next_delay)
-                        self.loader.stop_loading()
+                        self.loader.reset()
                         sys.stdout.write('.')
                     sys.stdout.write(']')
         print(']')
@@ -510,16 +510,16 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
         sys.stdout.write('single[')
         for random_floor in self.random_floors:
             for initialization_delay in self.initialization_delays:
+                self.loader = ValueLoaderGeneratorProcess(
+                    1, random_floor, initialization_delay)
                 for first_next_delay in self.first_next_delays:
                     sys.stdout.write('[')
                     for _ in range(self.repetitions):
-                        self.loader = ValueLoaderGeneratorProcess(
-                            1, random_floor, initialization_delay)
                         self.loader.load()
                         time.sleep(random.uniform(first_next_delay * random_floor,
                                                   first_next_delay))
                         self.assert_short_generation(1, random_floor, first_next_delay)
-                        self.loader.stop_loading()
+                        self.loader.reset()
                         sys.stdout.write('.')
                     sys.stdout.write(']')
         print(']')
@@ -528,15 +528,15 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
         sys.stdout.write('even[')
         for random_floor in self.random_floors:
             for generation_delay in self.generation_delays:
+                self.loader = ValueLoaderGeneratorProcess(
+                    10, generation_delay=generation_delay)
                 for consecutive_next_delay in self.consecutive_next_delays:
                     sys.stdout.write('[')
                     for _ in range(self.repetitions):
-                        self.loader = ValueLoaderGeneratorProcess(
-                            10, generation_delay=generation_delay)
                         self.loader.load()
                         self.assert_even_generation(
                             10, random_floor, consecutive_next_delay=consecutive_next_delay)
-                        self.loader.stop_loading()
+                        self.loader.reset()
                         sys.stdout.write('.')
                     sys.stdout.write(']')
         print(']')
@@ -545,15 +545,15 @@ class TestLoaderGeneratorProcess(unittest.TestCase):
         sys.stdout.write('gen[')
         for random_floor in self.random_floors:
             for generation_delay in self.generation_delays:
+                self.loader = ValueLoaderGeneratorProcess(
+                    10, generation_delay=generation_delay)
                 for consecutive_next_delay in self.consecutive_next_delays:
                     sys.stdout.write('[')
                     for _ in range(self.repetitions):
-                        self.loader = ValueLoaderGeneratorProcess(
-                            10, generation_delay=generation_delay)
                         self.loader.load()
                         self.assert_short_generation(
                             10, random_floor, consecutive_next_delay=consecutive_next_delay)
-                        self.loader.stop_loading()
+                        self.loader.reset()
                         sys.stdout.write('.')
                     sys.stdout.write(']')
         print(']')
