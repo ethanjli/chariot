@@ -449,16 +449,16 @@ class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
 
     # From DoubleBufferedProcess
 
-    def on_write_to_buffer(self, data):
-        self.double_buffer.write_buffer.value = data
+    def on_write_to_buffer(self, data, write_buffer):
+        write_buffer.value = data
 
     # From LoaderGeneratorProcess
 
-    def generate_output(self, loaded_next):
-        return loaded_next
+    def marshal_output(self, output):
+        return output
 
-    def _process_result(self, result):
-        return self.double_buffer.read_buffer.value
+    def unmarshal_output(self, marshalled, read_buffer):
+        return read_buffer.value
 
 class TestLoaderGeneratorProcess(unittest.TestCase):
     def setUp(self):

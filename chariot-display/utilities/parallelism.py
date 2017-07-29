@@ -408,14 +408,14 @@ class DoubleBufferedProcess(Process):
 
     # Child methods
 
-    def on_write_to_buffer(self, data):
+    def on_write_to_buffer(self, data, write_buffer):
         """Write the data to the double buffer's write buffer.
         Impelement this."""
         pass
 
     def write_to_buffer(self, data):
         acquire_lock_poll(self.double_buffer.write_lock, block=True, timeout=None)
-        self.on_write_to_buffer(data)
+        self.on_write_to_buffer(data, self.double_buffer.write_buffer)
         self.double_buffer.write_readable.set()
         self.double_buffer.write_lock.release()
 
@@ -443,18 +443,21 @@ class DoubleBufferedProcess(Process):
         self.double_buffer.write_lock.release()
 
 class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGenerator):
-    """A Loader/Generator which runs in a separate process."""
+    """Abstract base class for a Loader/Generator which runs in a separate process.
+    Implementation requires implementing the on_write_to_buffer, marshal_output, and
+    unmarshal_output methods.
+    """
     def __init__(self, LoaderGeneratorFactory, DoubleBufferFactory, *args, **kwargs):
         super(LoaderGeneratorProcess, self).__init__(
             DoubleBufferFactory, 1, 1, *args, **kwargs)
         self.loader = LoaderGeneratorFactory()
 
     # Child methods
-    # TODO: see if adding stubs for the abstract methods breaks the unit tests
 
-    def generate_output(self, loaded_next):
-        """Generate the contents of the output.
-        Override this to pass custom picklable data over the output queue."""
+    def marshal_output(self, loaded_next):
+        """Generate the contents of the output queue message.
+        Override this to pass custom picklable data over the output queue without
+        having to store it into the double buffer."""
         return True
 
     def _load_next(self):
@@ -462,7 +465,7 @@ class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGe
             loaded_next = next(self.loader)
             self.write_to_buffer(loaded_next)
             self.send_output({
-                'next': self.generate_output(loaded_next)
+                'next': self.marshal_output(loaded_next)
             })
         except StopIteration:
             self.double_buffer.write_readable.set()
@@ -490,13 +493,17 @@ class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGe
 
     # From DataGenerator
 
+    def unmarshal_output(self, marshalled, read_buffer):
+        """Given the marshalled data and the read buffer, reconstruct the data.
+        Implement this to reconstruct the data to be returned from next()."""
+        pass
+
     def next(self):
         self.swap_buffers()
         self.send_input('next')  # let the child start writing to the new write buffer
         output = self.receive_output()  # receive the output associated with the new read buffer
         if output is not None:
-            processed_result = self._process_result(output['next'])
-            return processed_result
+            return self.unmarshal_output(output['next'], self.double_buffer.read_buffer)
         else:
             raise StopIteration
 
