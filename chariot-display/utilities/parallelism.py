@@ -89,8 +89,8 @@ def flush_queue(queue):
 
 class DoubleBuffer(object):
     """Abstract base class for double buffering.
-    The current buffer is used for reading, while the shadow buffer is used for writing
-    the next current buffer.
+    The read buffer is used for reading, while the write buffer is used for writing
+    the next read buffer.
     Note that only the locks and event are synchronized across processes.
     """
     def __init__(self):
@@ -103,28 +103,28 @@ class DoubleBuffer(object):
         self._buffer_id.value = 1 - self._buffer_id.value
 
     @property
-    def current_id(self):
+    def read_id(self):
         return self._buffer_id.value
 
     @property
-    def shadow_id(self):
+    def write_id(self):
         return 1 - self._buffer_id.value
 
     @property
-    def current_buffer(self):
-        return self.get_buffer(self.current_id)
+    def read_buffer(self):
+        return self.get_buffer(self.read_id)
 
     @property
-    def shadow_buffer(self):
-        return self.get_buffer(self.shadow_id)
+    def write_buffer(self):
+        return self.get_buffer(self.write_id)
 
     @property
-    def current_lock(self):
-        return self._buffer_locks[self.current_id]
+    def read_lock(self):
+        return self._buffer_locks[self.read_id]
 
     @property
-    def shadow_lock(self):
-        return self._buffer_locks[self.shadow_id]
+    def write_lock(self):
+        return self._buffer_locks[self.write_id]
 
     def get_buffer(self, buffer_id):
         """Gets the buffer at the specified id.
@@ -143,19 +143,19 @@ class DoubleBuffer(object):
                 pass
 
     @property
-    def current_ready(self):
-        return self.get_ready_event(self.current_id)
+    def read_ready(self):
+        return self.get_ready_event(self.read_id)
 
     @property
-    def shadow_ready(self):
-        return self.get_ready_event(self.shadow_id)
+    def write_ready(self):
+        return self.get_ready_event(self.write_id)
 
     def get_ready_event(self, buffer_id):
         return self._buffer_ready_events[buffer_id]
 
     def reset(self):
-        self.current_ready.clear()
-        self.shadow_ready.clear()
+        self.read_ready.clear()
+        self.write_ready.clear()
 
 class Process(object):
     """Abstract base class for processes synchronized over input and output queues.
@@ -201,17 +201,15 @@ class Process(object):
         termination with a max delay of 1 second if the child is already active and
         waiting for input when it receives an interrupt.
         """
-        # print 'child: receiving input'
         while True:
             try:
                 next_input = self._input_queue.get(block, timeout)
-                # print 'child: received input', next_input
                 return next_input
             except Empty:
                 pass
 
     def send_output(self, next_output, block=True, timeout=None):
-        # print 'child: sending output', next_output
+        print 'child: sending output', next_output
         self._output_queue.put(next_output, block, timeout)
 
     def run_serial(self, block=True, timeout=1):
@@ -244,13 +242,10 @@ class Process(object):
         self.on_run_parent_start()
 
     def send_input(self, next_input, block=True, timeout=None):
-        # print 'parent: sending input', next_input
         self._input_queue.put(next_input, block, timeout)
 
     def receive_output(self, block=True, timeout=None):
-        # print 'parent: receiving output'
         next_output = self._output_queue.get(block, timeout)
-        # print 'parent: received output', next_output
         return next_output
 
     def on_terminate(self):
@@ -285,10 +280,7 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     # Child methods
 
     def _load_next(self):
-        # print 'child: acquiring lock on shadow buffer'
-        with self.double_buffer.shadow_lock:
-            # print 'child: acquired lock on shadow buffer'
-            keep_loading = True
+        with self.double_buffer.write_lock:
             try:
                 loaded_next = next(self.loader)
                 output = {
@@ -296,41 +288,27 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
                 }
             except StopIteration:
                 output = None
-                keep_loading = False
-            # print 'child: shadow buffer became ready'
-            self.double_buffer.shadow_ready.set()
+            self.double_buffer.write_ready.set()
             self.send_output(output)
-            return keep_loading
 
     # From Process
 
     def on_run_parent_start(self):
-        # print 'parent: acquiring lock on current buffer to prevent writes'
-        self.double_buffer.current_lock.acquire()
-        # print 'parent: acquired lock on current buffer'
-        self.send_input('next')  # load the first value into the shadow buffer
-        # print 'parent: waiting for shadow buffer to initialize'
-        self.double_buffer.shadow_ready.wait()
-        # print 'parent: shadow buffer initialized'
+        self.double_buffer.read_lock.acquire()
+        self.send_input('next')  # load the first value into the write buffer
+        self.double_buffer.write_ready.wait()
 
     def on_terminate_finish(self):
         super(LoaderGeneratorProcess, self).stop_loading()
 
     def on_run_start(self):
         self.loader.load()
-        self.keep_loading = True
         self.__child_initialized = False
 
     def execute(self, next_input):
         if next_input == 'next':
-            if self.keep_loading:
-                # print 'child: loading next value'
-                self.keep_loading = self._load_next()
-                # print 'child: loaded next value'
-                # print 'child: shadow buffer became ready'
-                self.double_buffer.shadow_ready.set()
-            else:
-                self.send_output(None)
+            self._load_next()
+            self.double_buffer.write_ready.set()
 
     def on_run_finish(self):
         self.loader.stop_loading()
@@ -338,32 +316,23 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     # From DataGenerator
 
     def next(self, block=True, timeout=1):
-        # Assumes the parent has a lock on the current buffer and no longer needs its data
-        # Lock the shadow buffer when it's ready to read
-        # print 'parent: waiting for shadow buffer to become ready'
-        self.double_buffer.shadow_ready.wait()
-        # print 'parent: shadow buffer became ready'
-        # print 'parent: acquiring lock on shadow buffer'
-        while not self.double_buffer.shadow_lock.acquire(block, timeout):
+        # Assumes the parent has a lock on the read buffer and no longer needs its data
+        # Lock the write buffer when it's ready to read
+        self.double_buffer.write_ready.wait()
+        while not self.double_buffer.write_lock.acquire(block, timeout):
             pass
-        # print 'parent: acquired lock on shadow buffer'
-        # Swap buffers, so the current buffer is locked, and the shadow buffer is no longer needed
+        # Swap buffers, so the read buffer is locked, and the write buffer is no longer needed
         self.double_buffer.swap()
-        # Reset the new shadow buffer
-        # print 'parent: new shadow buffer is no longer ready'
-        self.double_buffer.shadow_ready.clear()
-        # print 'parent: releasing lock on new shadow buffer'
-        self.double_buffer.shadow_lock.release()
-        # Let the child start writing to the new shadow buffer
+        # Reset the new write buffer
+        self.double_buffer.write_ready.clear()
+        self.double_buffer.write_lock.release()
+        # Let the child start writing to the new write buffer
         self.send_input('next')
 
-        # Receive the output associated with the new current buffer
+        # Receive the output associated with the new read buffer
         output = self.receive_output()
-        # print 'parent: received output', output
         if output is not None:
-            # print 'parent: processing result'
             processed_result = self._process_result(output['next'])
-            # print 'parent: processed result', processed_result
             return processed_result
         else:
             raise StopIteration

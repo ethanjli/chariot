@@ -4,9 +4,9 @@ import time
 import ctypes
 from multiprocessing import Value
 try:
-        from Queue import Empty, Full
+    from Queue import Empty, Full
 except ImportError:
-        from queue import Empty, Full
+    from queue import Empty, Full
 
 from data import data
 from utilities import parallelism
@@ -29,26 +29,22 @@ class TestProcess(unittest.TestCase):
     def assert_full(self, queue):
         try:
             queue.put(None, False)
-            self.assertFalse(True,
-                             'Queue should have been full')
+            self.assertFalse(True, 'Queue should have been full')
         except Full:
             pass
 
     def assert_empty(self, queue):
         try:
             queue.get(False)
-            self.assertFalse(True,
-                             'Queue should have been empty')
+            self.assertFalse(True, 'Queue should have been empty')
         except Empty:
             pass
 
     def test_terminate(self):
         self.tight_process.run_parallel()
-        self.assertTrue(self.tight_process.process_running,
-                        'Incorrect process state')
+        self.assertTrue(self.tight_process.process_running, 'Incorrect process state')
         self.tight_process.terminate()
-        self.assertFalse(self.tight_process.process_running,
-                         'Incorrect process state')
+        self.assertFalse(self.tight_process.process_running, 'Incorrect process state')
         self.assert_empty(self.tight_process._output_queue)
 
     def test_tight_execute(self):
@@ -107,37 +103,37 @@ class DoubleBufferedProcess(parallelism.Process):
             self.double_buffer.swap()
             self.send_output(next_input)
         elif next_input[0] == 'read_value':
-            if next_input[1] == 'current':
-                buf = self.double_buffer.current_buffer
-            elif next_input[1] == 'shadow':
-                buf = self.double_buffer.shadow_buffer
+            if next_input[1] == 'read':
+                buf = self.double_buffer.read_buffer
+            elif next_input[1] == 'write':
+                buf = self.double_buffer.write_buffer
             self.send_output(('read_value', next_input[1], buf.value))
         elif next_input[0] == 'write_value':
-            if next_input[1] == 'current':
-                buf = self.double_buffer.current_buffer
-            elif next_input[1] == 'shadow':
-                buf = self.double_buffer.shadow_buffer
+            if next_input[1] == 'read':
+                buf = self.double_buffer.read_buffer
+            elif next_input[1] == 'write':
+                buf = self.double_buffer.write_buffer
             buf.value = next_input[2]
             self.send_output(next_input)
         elif next_input[0] == 'acquire_lock':
-            if next_input[1] == 'current':
-                lock = self.double_buffer.current_lock
-            elif next_input[1] == 'shadow':
-                lock = self.double_buffer.shadow_lock
+            if next_input[1] == 'read':
+                lock = self.double_buffer.read_lock
+            elif next_input[1] == 'write':
+                lock = self.double_buffer.write_lock
             lock.acquire()
             self.send_output(next_input)
         elif next_input[0] == 'release_lock':
-            if next_input[1] == 'current':
-                lock = self.double_buffer.current_lock
-            elif next_input[1] == 'shadow':
-                lock = self.double_buffer.shadow_lock
+            if next_input[1] == 'read':
+                lock = self.double_buffer.read_lock
+            elif next_input[1] == 'write':
+                lock = self.double_buffer.write_lock
             lock.release()
             self.send_output(next_input)
         elif next_input[0] == 'query_lock':
-            if next_input[1] == 'current':
-                lock = self.double_buffer.current_lock
-            elif next_input[1] == 'shadow':
-                lock = self.double_buffer.shadow_lock
+            if next_input[1] == 'read':
+                lock = self.double_buffer.read_lock
+            elif next_input[1] == 'write':
+                lock = self.double_buffer.write_lock
             previously_unlocked = lock.acquire(False)
             if previously_unlocked:
                 lock.release()
@@ -149,28 +145,26 @@ class TestDoubleBuffer(unittest.TestCase):
         self.double_buffer = ValueDoubleBuffer()
 
     def test_init(self):
-        self.assertEqual(self.double_buffer.current_id, 0,
+        self.assertEqual(self.double_buffer.read_id, 0,
                          'Incorrect initialization')
-        self.assertEqual(self.double_buffer.shadow_id, 1,
+        self.assertEqual(self.double_buffer.write_id, 1,
                          'Incorrect initialization')
 
     def test_lock_access(self):
-        self.assertIs(self.double_buffer.current_lock,
-                      self.double_buffer.get_lock(0),
+        self.assertIs(self.double_buffer.read_lock, self.double_buffer.get_lock(0),
                       'Incorrect lock access')
-        self.assertIs(self.double_buffer.shadow_lock,
-                      self.double_buffer.get_lock(1),
+        self.assertIs(self.double_buffer.write_lock, self.double_buffer.get_lock(1),
                       'Incorrect lock access')
 
     def test_swap(self):
-        self.double_buffer.current_buffer.value = 1
+        self.double_buffer.read_buffer.value = 1
         self.double_buffer.swap()
-        self.double_buffer.current_buffer.value = 2
+        self.double_buffer.read_buffer.value = 2
         self.double_buffer.swap()
-        self.assertEqual(self.double_buffer.current_buffer.value, 1,
+        self.assertEqual(self.double_buffer.read_buffer.value, 1,
                          'Incorrect double buffer swap')
         self.double_buffer.swap()
-        self.assertEqual(self.double_buffer.current_buffer.value, 2,
+        self.assertEqual(self.double_buffer.read_buffer.value, 2,
                          'Incorrect double buffer swap')
 
 class TestDoubleBufferSynchronization(unittest.TestCase):
@@ -188,66 +182,66 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.process.send_input(input_args)
         return self.process.receive_output()
 
-    def assert_parent_value(self, current_expected, shadow_expected, error_message):
-        self.assertEqual(self.process.double_buffer.current_buffer.value, current_expected,
+    def assert_parent_value(self, read_expected, write_expected, error_message):
+        self.assertEqual(self.process.double_buffer.read_buffer.value, read_expected,
                          error_message)
-        self.assertEqual(self.process.double_buffer.shadow_buffer.value, shadow_expected,
+        self.assertEqual(self.process.double_buffer.write_buffer.value, write_expected,
                          error_message)
 
-    def assert_child_value(self, current_expected, shadow_expected, error_message):
-        self.assertEqual(self.round_trip('read_value', 'current'),
-                         ('read_value', 'current', current_expected),
+    def assert_child_value(self, read_expected, write_expected, error_message):
+        self.assertEqual(self.round_trip('read_value', 'read'),
+                         ('read_value', 'read', read_expected),
                          error_message)
-        self.assertEqual(self.round_trip('read_value', 'shadow'),
-                         ('read_value', 'shadow', shadow_expected),
+        self.assertEqual(self.round_trip('read_value', 'write'),
+                         ('read_value', 'write', write_expected),
                          error_message)
 
     def test_value_synchronization_to_child(self):
-        self.process.double_buffer.current_buffer.value = 1
-        self.process.double_buffer.shadow_buffer.value = 2
+        self.process.double_buffer.read_buffer.value = 1
+        self.process.double_buffer.write_buffer.value = 2
         self.assert_child_value(1, 2, 'Incorrect value synchronization from parent to child')
 
-        self.process.double_buffer.current_buffer.value = 3
+        self.process.double_buffer.read_buffer.value = 3
         self.assert_child_value(3, 2, 'Incorrect value synchronization from parent to child')
 
-        self.process.double_buffer.shadow_buffer.value = 4
+        self.process.double_buffer.write_buffer.value = 4
         self.assert_child_value(3, 4, 'Incorrect value synchronization from parent to child')
 
     def test_value_synchronization_from_child(self):
-        self.round_trip('write_value', 'current', 1)
-        self.round_trip('write_value', 'shadow', 2)
+        self.round_trip('write_value', 'read', 1)
+        self.round_trip('write_value', 'write', 2)
         self.assert_parent_value(1, 2, 'Incorrect value synchronization from child to parent')
 
-        self.round_trip('write_value', 'current', 3)
+        self.round_trip('write_value', 'read', 3)
         self.assert_parent_value(3, 2, 'Incorrect value synchronization from child to parent')
-        self.round_trip('write_value', 'shadow', 4)
+        self.round_trip('write_value', 'write', 4)
         self.assert_parent_value(3, 4, 'Incorrect value synchronization from child to parent')
 
     def test_parent_swap(self):
-        self.process.double_buffer.current_buffer.value = 1
-        self.process.double_buffer.shadow_buffer.value = 2
+        self.process.double_buffer.read_buffer.value = 1
+        self.process.double_buffer.write_buffer.value = 2
         self.process.double_buffer.swap()
         self.assert_parent_value(2, 1, 'Incorrect swap synchronization')
 
         self.process.double_buffer.swap()
         self.assert_parent_value(1, 2, 'Incorrect swap synchronization')
 
-    def assert_parent_lock_state(self, current_unlocked, shadow_unlocked, error_message):
-        current_assert = self.assertTrue if current_unlocked else self.assertFalse
-        shadow_assert = self.assertTrue if shadow_unlocked else self.assertFalse
-        current_assert(self.is_unlocked(self.process.double_buffer.current_lock),
-                       error_message)
-        shadow_assert(self.is_unlocked(self.process.double_buffer.shadow_lock),
-                      error_message)
+    def assert_parent_lock_state(self, read_unlocked, write_unlocked, error_message):
+        read_assert = self.assertTrue if read_unlocked else self.assertFalse
+        write_assert = self.assertTrue if write_unlocked else self.assertFalse
+        read_assert(self.is_unlocked(self.process.double_buffer.read_lock),
+                    error_message)
+        write_assert(self.is_unlocked(self.process.double_buffer.write_lock),
+                     error_message)
 
-    def assert_child_lock_state(self, current_unlocked, shadow_unlocked, error_message):
-        current_expected = 'unlocked' if current_unlocked else 'locked'
-        shadow_expected = 'unlocked' if shadow_unlocked else 'locked'
-        self.assertEqual(self.round_trip('query_lock', 'current'),
-                         ('query_lock', 'current', current_expected),
+    def assert_child_lock_state(self, read_unlocked, write_unlocked, error_message):
+        read_expected = 'unlocked' if read_unlocked else 'locked'
+        write_expected = 'unlocked' if write_unlocked else 'locked'
+        self.assertEqual(self.round_trip('query_lock', 'read'),
+                         ('query_lock', 'read', read_expected),
                          error_message)
-        self.assertEqual(self.round_trip('query_lock', 'shadow'),
-                         ('query_lock', 'shadow', shadow_expected),
+        self.assertEqual(self.round_trip('query_lock', 'write'),
+                         ('query_lock', 'write', write_expected),
                          error_message)
 
     def test_locking_initialization(self):
@@ -255,30 +249,30 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.assert_child_lock_state(True, True, 'Incorrect lock initialization in child')
 
     def test_locking_parent(self):
-        self.process.double_buffer.current_lock.acquire()
+        self.process.double_buffer.read_lock.acquire()
         self.assert_child_lock_state(False, True,
                                      'Incorrect lock synchronization from parent to child')
-        self.process.double_buffer.shadow_lock.acquire()
+        self.process.double_buffer.write_lock.acquire()
         self.assert_child_lock_state(False, False,
                                      'Incorrect lock synchronization from parent to child')
-        self.process.double_buffer.current_lock.release()
+        self.process.double_buffer.read_lock.release()
         self.assert_child_lock_state(True, False,
                                      'Incorrect lock synchronization from parent to child')
-        self.process.double_buffer.shadow_lock.release()
+        self.process.double_buffer.write_lock.release()
         self.assert_child_lock_state(True, True,
                                      'Incorrect lock synchronization from parent to child')
 
     def test_locking_child(self):
-        self.round_trip('acquire_lock', 'current')
+        self.round_trip('acquire_lock', 'read')
         self.assert_parent_lock_state(False, True,
                                       'Incorrect lock synchronization from child to parent')
-        self.round_trip('acquire_lock', 'shadow')
+        self.round_trip('acquire_lock', 'write')
         self.assert_parent_lock_state(False, False,
                                       'Incorrect lock synchronization from child to parent')
-        self.round_trip('release_lock', 'current')
+        self.round_trip('release_lock', 'read')
         self.assert_parent_lock_state(True, False,
                                       'Incorrect lock synchronization from child to parent')
-        self.round_trip('release_lock', 'shadow')
+        self.round_trip('release_lock', 'write')
         self.assert_parent_lock_state(True, True,
                                       'Incorrect lock synchronization from child to parent')
 
@@ -311,23 +305,32 @@ class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
     # From LoaderGeneratorProcess
 
     def _on_load(self, loaded_next):
-        # print 'child: writing next value', loaded_next, 'to shadow buffer'
-        self.double_buffer.shadow_buffer.value = loaded_next
+        self.double_buffer.write_buffer.value = loaded_next
         return loaded_next
 
     def _process_result(self, result):
-        # print 'parent: got processed result in current buffer'
-        return self.double_buffer.current_buffer.value
+        return self.double_buffer.read_buffer.value
 
 class TestLoaderGeneratorProcess(unittest.TestCase):
-    def setUp(self):
-        self.null_loader = ValueLoaderGeneratorProcess(0)
-        self.short_loader = ValueLoaderGeneratorProcess(1)
-        self.double_loader = ValueLoaderGeneratorProcess(2)
+    def test_null_generation(self):
+        self.loader = ValueLoaderGeneratorProcess(0)
+        self.loader.load()
+        try:
+            result = next(self.loader)
+            self.assertFalse(True, 'Incorrect behavior')
+        except StopIteration:
+            pass
+
+    def test_even_generation(self):
         self.loader = ValueLoaderGeneratorProcess(10)
         self.loader.load()
+        for i in range(10):
+            result = next(self.loader)
+            self.assertEqual(result, 2 * i, 'Incorrect generation')
 
     def test_generation(self):
+        self.loader = ValueLoaderGeneratorProcess(10)
+        self.loader.load()
         for i in range(20):
             try:
                 result = next(self.loader)
