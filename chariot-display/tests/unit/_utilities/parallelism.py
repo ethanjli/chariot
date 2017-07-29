@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 import unittest
 import time
+import random
+import sys
 import ctypes
 from multiprocessing import Value
 try:
@@ -281,9 +283,13 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
             self.process.terminate()
 
 class ValueLoader(data.DataLoader, data.DataGenerator):
-    def __init__(self, length):
+    def __init__(self, length, random_floor=0,
+                 loader_initialization_delay=0, generation_delay=0):
         self.i = 0
         self.length = length
+        self.random_floor = random_floor
+        self.loader_initialization_delay = loader_initialization_delay
+        self.generation_delay = generation_delay
 
     # From DataGenerator
 
@@ -292,15 +298,23 @@ class ValueLoader(data.DataLoader, data.DataGenerator):
             raise StopIteration
         result = self.i * 2
         self.i += 1
+        time.sleep(random.uniform(self.generation_delay * self.random_floor,
+                                  self.generation_delay))
         return result
 
     def reset(self):
         self.i = 0
 
+    # From DataLoader
+
+    def load(self):
+        time.sleep(random.uniform(self.loader_initialization_delay * self.random_floor,
+                                  self.loader_initialization_delay))
+
 class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
-    def __init__(self, loader_length):
+    def __init__(self, *args, **kwargs):
         super(ValueLoaderGeneratorProcess, self).__init__(
-            ValueDoubleBuffer(), lambda: ValueLoader(loader_length))
+            ValueDoubleBuffer(), lambda: ValueLoader(*args, **kwargs))
 
     # From LoaderGeneratorProcess
 
@@ -312,38 +326,117 @@ class ValueLoaderGeneratorProcess(parallelism.LoaderGeneratorProcess):
         return self.double_buffer.read_buffer.value
 
 class TestLoaderGeneratorProcess(unittest.TestCase):
-    def test_null_generation(self):
-        self.loader = ValueLoaderGeneratorProcess(0)
-        self.loader.load()
-        try:
-            result = next(self.loader)
-            self.assertFalse(True, 'Incorrect behavior')
-        except StopIteration:
-            pass
+    def setUp(self):
+        self.random_floors = [1, 0.5]
+        self.initialization_delays = [0, 0.01]
+        self.first_next_delays = [0, 0.01]
+        self.generation_delays = [0, 0.01]
+        self.consecutive_next_delays = [0, 0.01]
+        self.repetitions = 10
 
-    def test_even_generation(self):
-        self.loader = ValueLoaderGeneratorProcess(10)
-        self.loader.load()
-        for i in range(10):
-            result = next(self.loader)
-            self.assertEqual(result, 2 * i, 'Incorrect generation')
-
-    def test_generation(self):
-        self.loader = ValueLoaderGeneratorProcess(10)
-        self.loader.load()
-        for i in range(20):
+    def assert_even_generation(self, length, random_floor,
+                               first_next_delay=0, consecutive_next_delay=0):
+        time.sleep(random.uniform(first_next_delay * random_floor, first_next_delay))
+        for i in range(length):
             try:
                 result = next(self.loader)
-                print result, 2 * i
                 self.assertEqual(result, 2 * i, 'Incorrect generation')
+                time.sleep(random.uniform(consecutive_next_delay * random_floor,
+                                          consecutive_next_delay))
             except StopIteration:
-                self.assertEqual(i, 10, 'Incorrect StopIteration')
-                break
+                self.assertFalse(True, 'Extraneous StopIteration')
+
+    def assert_stopiteration(self, message):
         try:
             next(self.loader)
-            self.assertFalse(True, 'Incorrect behavior past StopIteration')
+            self.assertFalse(True, message)
         except StopIteration:
             pass
+
+    def assert_short_generation(self, length, random_floor,
+                                first_next_delay=0, consecutive_next_delay=0):
+        time.sleep(random.uniform(first_next_delay * random_floor, first_next_delay))
+        for i in range(2 * length):
+            try:
+                result = next(self.loader)
+                self.assertEqual(result, 2 * i, 'Incorrect generation')
+                time.sleep(random.uniform(consecutive_next_delay * random_floor,
+                                          consecutive_next_delay))
+            except StopIteration:
+                self.assertEqual(i, length, 'Incorrect StopIteration')
+                break
+        for i in range(length):
+            self.assert_stopiteration('Missing StopIteration')
+
+    def test_null_generation(self):
+        sys.stdout.write('null[')
+        for random_floor in self.random_floors:
+            for initialization_delay in self.initialization_delays:
+                for first_next_delay in self.first_next_delays:
+                    sys.stdout.write('[')
+                    for _ in range(self.repetitions):
+                        self.loader = ValueLoaderGeneratorProcess(
+                            0, random_floor, initialization_delay)
+                        self.loader.load()
+                        time.sleep(random.uniform(first_next_delay * random_floor,
+                                                  first_next_delay))
+                        self.assert_short_generation(0, random_floor, first_next_delay)
+                        self.loader.stop_loading()
+                        sys.stdout.write('.')
+                    sys.stdout.write(']')
+        print(']')
+
+    def test_single_generation(self):
+        sys.stdout.write('single[')
+        for random_floor in self.random_floors:
+            for initialization_delay in self.initialization_delays:
+                for first_next_delay in self.first_next_delays:
+                    sys.stdout.write('[')
+                    for _ in range(self.repetitions):
+                        self.loader = ValueLoaderGeneratorProcess(
+                            1, random_floor, initialization_delay)
+                        self.loader.load()
+                        time.sleep(random.uniform(first_next_delay * random_floor,
+                                                  first_next_delay))
+                        self.assert_short_generation(1, random_floor, first_next_delay)
+                        self.loader.stop_loading()
+                        sys.stdout.write('.')
+                    sys.stdout.write(']')
+        print(']')
+
+    def test_even_generation(self):
+        sys.stdout.write('even[')
+        for random_floor in self.random_floors:
+            for generation_delay in self.generation_delays:
+                for consecutive_next_delay in self.consecutive_next_delays:
+                    sys.stdout.write('[')
+                    for _ in range(self.repetitions):
+                        self.loader = ValueLoaderGeneratorProcess(
+                            10, generation_delay=generation_delay)
+                        self.loader.load()
+                        self.assert_even_generation(
+                            10, random_floor, consecutive_next_delay=consecutive_next_delay)
+                        self.loader.stop_loading()
+                        sys.stdout.write('.')
+                    sys.stdout.write(']')
+        print(']')
+
+    def test_generation(self):
+        sys.stdout.write('gen[')
+        for random_floor in self.random_floors:
+            for generation_delay in self.generation_delays:
+                for consecutive_next_delay in self.consecutive_next_delays:
+                    sys.stdout.write('[')
+                    for _ in range(self.repetitions):
+                        self.loader = ValueLoaderGeneratorProcess(
+                            10, generation_delay=generation_delay)
+                        self.loader.load()
+                        self.assert_short_generation(
+                            10, random_floor, consecutive_next_delay=consecutive_next_delay)
+                        self.loader.stop_loading()
+                        sys.stdout.write('.')
+                    sys.stdout.write(']')
+        print(']')
 
     def tearDown(self):
         if self.loader.process_running:

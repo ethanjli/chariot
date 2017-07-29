@@ -97,7 +97,7 @@ class DoubleBuffer(object):
         self._buffer_id = Value(ctypes.c_int)
         self._buffer_id.value = 0
         self._buffer_locks = [multiprocessing.Lock(), multiprocessing.Lock()]
-        self._buffer_ready_events = [multiprocessing.Event(), multiprocessing.Event()]
+        self._buffer_readable_events = [multiprocessing.Event(), multiprocessing.Event()]
 
     def swap(self):
         self._buffer_id.value = 1 - self._buffer_id.value
@@ -143,19 +143,19 @@ class DoubleBuffer(object):
                 pass
 
     @property
-    def read_ready(self):
-        return self.get_ready_event(self.read_id)
+    def read_readable(self):
+        return self._buffer_readable_events[self.read_id]
 
     @property
-    def write_ready(self):
-        return self.get_ready_event(self.write_id)
+    def write_readable(self):
+        return self._buffer_readable_events[self.write_id]
 
-    def get_ready_event(self, buffer_id):
-        return self._buffer_ready_events[buffer_id]
+    def get_readable_event(self, buffer_id):
+        return self._buffer_readable_events[buffer_id]
 
     def reset(self):
-        self.read_ready.clear()
-        self.write_ready.clear()
+        self.read_readable.clear()
+        self.write_readable.clear()
 
 class Process(object):
     """Abstract base class for processes synchronized over input and output queues.
@@ -209,7 +209,6 @@ class Process(object):
                 pass
 
     def send_output(self, next_output, block=True, timeout=None):
-        print 'child: sending output', next_output
         self._output_queue.put(next_output, block, timeout)
 
     def run_serial(self, block=True, timeout=1):
@@ -275,40 +274,37 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
         self.loader = LoaderGeneratorFactory()
         self.buffer_ready = multiprocessing.Event()
 
-        self.__child_initialized = multiprocessing.Event()
-
     # Child methods
 
     def _load_next(self):
-        with self.double_buffer.write_lock:
-            try:
-                loaded_next = next(self.loader)
+        try:
+            loaded_next = next(self.loader)
+            # Lock the write buffer to write to it
+            with self.double_buffer.write_lock:
                 output = {
                     'next': self._on_load(loaded_next)
                 }
-            except StopIteration:
-                output = None
-            self.double_buffer.write_ready.set()
-            self.send_output(output)
+                self.double_buffer.write_readable.set()
+                self.send_output(output)
+        except StopIteration:
+            self.double_buffer.write_readable.set()
+            self.send_output(None)
 
     # From Process
 
     def on_run_parent_start(self):
-        self.double_buffer.read_lock.acquire()
-        self.send_input('next')  # load the first value into the write buffer
-        self.double_buffer.write_ready.wait()
+        self.double_buffer.read_lock.acquire()  # prepare for the assumptions of the next() call
+        self.send_input('next')  # let child load the first value into the write buffer
 
     def on_terminate_finish(self):
         super(LoaderGeneratorProcess, self).stop_loading()
 
     def on_run_start(self):
         self.loader.load()
-        self.__child_initialized = False
 
     def execute(self, next_input):
         if next_input == 'next':
             self._load_next()
-            self.double_buffer.write_ready.set()
 
     def on_run_finish(self):
         self.loader.stop_loading()
@@ -316,15 +312,15 @@ class LoaderGeneratorProcess(Process, data.DataLoader, data.DataGenerator):
     # From DataGenerator
 
     def next(self, block=True, timeout=1):
-        # Assumes the parent has a lock on the read buffer and no longer needs its data
-        # Lock the write buffer when it's ready to read
-        self.double_buffer.write_ready.wait()
+        # Assumes the parent has the read lock and no longer needs the read buffer's data
+        self.double_buffer.write_readable.wait()
+        # Lock the write buffer so we can read from it when it becomes a read buffer
         while not self.double_buffer.write_lock.acquire(block, timeout):
             pass
-        # Swap buffers, so the read buffer is locked, and the write buffer is no longer needed
+        # Swap buffers, so that our locked buffer becomes the new read buffer
         self.double_buffer.swap()
-        # Reset the new write buffer
-        self.double_buffer.write_ready.clear()
+        # Reset and release our unneeded buffer as the new write buffer
+        self.double_buffer.write_readable.clear()
         self.double_buffer.write_lock.release()
         # Let the child start writing to the new write buffer
         self.send_input('next')
