@@ -1,8 +1,9 @@
 #!/usr/bin/env python2
 """Functions and classes for loading of results output by libomnistereo."""
 from os import path
+import ctypes
 
-from data import concurrent, point_clouds
+from data import concurrent, arrays, point_clouds
 import sequences
 import datasets
 
@@ -37,10 +38,37 @@ class PointCloudSequence(sequences.FileSequence, point_clouds.Sequence):
 
 # SEQUENCE LOADERS
 
-PointCloudSequenceLoader = sequences.FileSequenceLoader
+class PointCloudSequenceLoader(sequences.FileSequenceLoader, arrays.ArraysSource):
+    def __init__(self, sequence, max_num_points=None):
+        super(PointCloudSequenceLoader, self).__init__(sequence)
+        self.max_num_points = max_num_points
 
-def PointCloudSequenceConcurrentLoader(sequence, max_size=10, *args, **kwargs):
-    return sequences.FileSequenceConcurrentLoader(sequence, max_size, False, *args, **kwargs)
+    # From ArraysSource
+
+    @property
+    def array_ctypes(self):
+        return (ctypes.c_double, ctypes.c_double)
+
+    @property
+    def array_shapes(self):
+        return ((self.max_num_points, 3), (self.max_num_points, 3))
+
+class PointCloudSequenceConcurrentLoader(sequences.FileSequenceConcurrentLoader,
+                                         arrays.ArraysSource):
+    def __init__(self, sequence, max_size=10, max_num_points=None):
+        super(PointCloudSequenceConcurrentLoader, self).__init__(
+            sequence, max_size, False)
+        self.max_num_points = max_num_points
+
+    # From ArraysSource
+
+    @property
+    def array_ctypes(self):
+        return (ctypes.c_double, ctypes.c_double)
+
+    @property
+    def array_shapes(self):
+        return ((self.max_num_points, 3), (self.max_num_points, 3))
 
 # DATASET DEFINITION
 

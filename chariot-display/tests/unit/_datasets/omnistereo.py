@@ -2,6 +2,7 @@
 import unittest
 import os
 
+from data import point_clouds
 from datasets import omnistereo
 
 _PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,39 @@ class TestPointCloudSequenceConcurrentLoader(unittest.TestCase):
 
     def tearDown(self):
         self.loader.stop_loading()
+
+class TestPointCloudSequenceParallelLoader(unittest.TestCase):
+    def setUp(self):
+        self.sequence = omnistereo.PointCloudSequence(
+            os.path.join(DATASETS_PATH, 'omnistereo', 'Seq_0008', 'Rectification'),
+            'point_cloud_stereo_'
+        )
+        self.loader = None
+
+    def assert_generation(self):
+        self.assertEqual(next(self.loader).num_points, 292576,
+                         'Incorrect point cloud loading')
+        self.assertEqual(next(self.loader).num_points, 292766,
+                         'Incorrect point cloud loading')
+        self.assertEqual(next(self.loader).num_points, 293242,
+                         'Incorrect point cloud loading')
+
+    def test_loading(self):
+        self.loader = point_clouds.ParallelLoader(
+            lambda: omnistereo.PointCloudSequenceLoader(self.sequence, 300000))
+        self.loader.load()
+        self.assert_generation()
+
+    def test_loading_with_concurrency(self):
+        self.loader = point_clouds.ParallelLoader(
+            lambda: omnistereo.PointCloudSequenceConcurrentLoader(
+                self.sequence, max_num_points=300000))
+        self.loader.load()
+        self.assert_generation()
+
+    def tearDown(self):
+        if self.loader is not None:
+            self.loader.stop_loading()
 
 class TestDataset(unittest.TestCase):
     def setUp(self):

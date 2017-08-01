@@ -72,7 +72,7 @@ class DoubleBuffer(parallelism.DoubleBuffer):
     def get_buffer(self, buffer_id):
         return self._point_clouds[buffer_id]
 
-class ParallelLoader(parallelism.LoaderGeneratorProcess):
+class ParallelLoader(parallelism.LoaderGeneratorProcess, arrays.ArraysSource):
     """Generates point clouds sequentially in a separate process into shared memory."""
     def __init__(self, PointCloudLoaderGeneratorFactory, *args, **kwargs):
         super(ParallelLoader, self).__init__(
