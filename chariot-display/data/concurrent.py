@@ -1,11 +1,11 @@
 """Classes for loading data concurrently in separate threads."""
 import threading
 try:
-        from Queue import Queue, Full
+        from Queue import Queue, Empty, Full
 except ImportError:
-        from queue import Queue, Full
+        from queue import Queue, Empty, Full
 
-from utilities import concurrency
+from utilities import concurrency, parallelism
 import data
 
 class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
@@ -78,12 +78,13 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
         self._run = True
         self._load = True
 
-    def next(self, block=True, timeout=None):
+    def next(self, block=True, timeout=1):
         """Gets the next loaded data and returns it.
         If no data is loaded, raises StopIteration."""
         if not self._run:
             raise StopIteration
-        next_data = self._data_queue.get(block, timeout)
+        next_data = parallelism.get_queue_poll(
+            self._data_queue, block, timeout)  # Allow KeyboardInterrupts to interrupt get
         if next_data is None:
             raise StopIteration
         return next_data

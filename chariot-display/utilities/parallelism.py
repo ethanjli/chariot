@@ -516,9 +516,9 @@ class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGe
 
     def next(self):
         self.swap_buffers()
+        self.send_input('next')  # let the child start writing to the new write buffer
         output = self.receive_output()  # receive the output associated with the new read buffer
         if output is not None:
-            self.send_input('next')  # let the child start writing to the new write buffer
             return self.unmarshal_output(output['next'], self.double_buffer.read_buffer)
         else:
             raise StopIteration
