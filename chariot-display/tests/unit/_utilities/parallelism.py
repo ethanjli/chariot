@@ -223,6 +223,8 @@ class DoubleBufferClientProcess(parallelism.Process):
         super(DoubleBufferClientProcess, self).__init__(1, 1)
         self.double_buffer = ValueDoubleBuffer()
 
+    # From Process
+
     def on_run_start(self):
         self.send_output('started')
 
@@ -408,6 +410,143 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
         self.round_trip('release_lock', 'write')
         self.assert_parent_lock_state(True, True,
                                       'Incorrect lock synchronization from child to parent')
+
+    def tearDown(self):
+        if self.process.process_running:
+            self.process.terminate()
+
+class ValueDoubleBufferedProcess(parallelism.DoubleBufferedProcess):
+    def __init__(self, *args, **kwargs):
+        super(ValueDoubleBufferedProcess, self).__init__(ValueDoubleBuffer, 10, 10)
+
+    # From DoubleBufferedProcess
+
+    def on_write_to_buffer(self, data, write_buffer):
+        write_buffer.value = data
+
+    # From Process
+
+    def on_run_start(self):
+        self.send_output('started')
+
+    def execute(self, next_input):
+        if next_input[0] == 'double':
+            self.write_to_buffer(next_input[1] * 2)
+            self.send_output('double')
+        elif next_input[0] == 'read':
+            self.send_output(self.double_buffer.read_buffer.value)
+        elif next_input[0] == 'swap':
+            self.swap_buffers()
+            self.send_output('swap')
+        elif next_input[0] == 'delayed_double':
+            self.write_to_buffer(next_input[1] * 2)
+            time.sleep(0.5)
+
+    def on_run_parent_start(self):
+        parallelism.acquire_lock_poll(self.double_buffer.read_lock, block=True, timeout=1)
+
+class TestDoubleBufferedProcess(unittest.TestCase):
+    def parallelsafe_setUp(self):
+        self.process = ValueDoubleBufferedProcess()
+        self.process.run_parallel()
+        self.assertEqual(self.process.receive_output(), 'started',
+                         'Incorrect initialization')
+        self.assert_lock_state(False, True, 'Incorrect initialization')
+        self.assertEqual(self.process.double_buffer.read_id, 0, 'Incorrect initialization')
+
+    def is_unlocked(self, lock):
+        previously_unlocked = lock.acquire(False)
+        if previously_unlocked:
+            lock.release()
+        return previously_unlocked
+
+    def assert_lock_state(self, read_unlocked, write_unlocked, error_message):
+        read_assert = self.assertTrue if read_unlocked else self.assertFalse
+        write_assert = self.assertTrue if write_unlocked else self.assertFalse
+        read_assert(self.is_unlocked(self.process.double_buffer.read_lock),
+                    error_message)
+        write_assert(self.is_unlocked(self.process.double_buffer.write_lock),
+                     error_message)
+
+    def round_trip(self, *input_args):
+        self.process.send_input(input_args)
+        return self.process.receive_output()
+
+    def swap_child(self, check_locks_before=True):
+        if check_locks_before:
+            self.assert_lock_state(False, True, 'Incorrect synchronization')
+        self.assertEqual(self.round_trip('swap'), 'swap', 'Incorrect synchronization')
+        self.assert_lock_state(False, True, 'Incorrect synchronization')
+
+    def swap_parent(self):
+        self.assert_lock_state(False, True, 'Incorrect synchronization')
+        self.process.swap_buffers()
+        self.assert_lock_state(False, True, 'Incorrect synchronization')
+
+    def double(self, value):
+        self.assertEqual(self.round_trip('double', value), 'double', 'Incorrect synchronization')
+
+    def test_repeated_reads(self):
+        self.parallelsafe_setUp()
+        self.double(8)
+        self.swap_child()
+        for _ in range(20):
+            self.assertEqual(self.round_trip('read'), 16, 'Incorrect read')
+
+    def test_repeated_writes(self):
+        self.parallelsafe_setUp()
+        for i in range(20):
+            self.double(i)
+        self.swap_child()
+        self.assertEqual(self.round_trip('read'), 2 * 19, 'Incorrect double')
+
+    def test_delayed_double(self):
+        self.parallelsafe_setUp()
+        self.process.send_input(('delayed_double', 8))
+        self.swap_child(False)
+        self.assertEqual(self.round_trip('read'), 16, 'Incorrect synchronization')
+
+    def test_parent_swap(self):
+        self.parallelsafe_setUp()
+        self.double(4)
+        self.swap_parent()
+        self.assertEqual(self.round_trip('read'), 8, 'Incorrect synchronization')
+        self.double(8)
+        self.swap_parent()
+        self.assertEqual(self.round_trip('read'), 16, 'Incorrect synchronization')
+        self.double(16)
+        self.swap_parent()
+        self.assertEqual(self.round_trip('read'), 32, 'Incorrect synchronization')
+        self.process.send_input(('delayed_double', 32))
+        self.swap_parent()
+        self.double(64)
+        self.assertEqual(self.round_trip('read'), 64, 'Incorrect synchronization')
+        self.swap_parent()
+        self.process.send_input(('delayed_double', 128))
+        self.assertEqual(self.round_trip('read'), 128, 'Incorrect synchronization')
+        self.swap_parent()
+        self.assertEqual(self.round_trip('read'), 256, 'Incorrect synchronization')
+
+    def test_child_swap(self):
+        self.parallelsafe_setUp()
+        self.double(4)
+        self.swap_child()
+        self.assertEqual(self.round_trip('read'), 8, 'Incorrect synchronization')
+        self.double(8)
+        self.swap_child()
+        self.assertEqual(self.round_trip('read'), 16, 'Incorrect synchronization')
+        self.double(16)
+        self.swap_child()
+        self.assertEqual(self.round_trip('read'), 32, 'Incorrect synchronization')
+        self.process.send_input(('delayed_double', 32))
+        self.swap_child()
+        self.double(64)
+        self.assertEqual(self.round_trip('read'), 64, 'Incorrect synchronization')
+        self.swap_child()
+        self.process.send_input(('delayed_double', 128))
+        self.assertEqual(self.round_trip('read'), 128, 'Incorrect synchronization')
+        self.swap_child()
+        self.assertEqual(self.round_trip('read'), 256, 'Incorrect synchronization')
 
     def tearDown(self):
         if self.process.process_running:
