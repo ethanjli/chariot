@@ -191,9 +191,11 @@ class SceneAnimator(concurrency.Thread):
     def init_car_visual(self):
         self.scene_manager.add_visual('car')
 
-    def init_local_visual(self, point_cloud_sequence, points_margin=1000):
+    def init_local_visual(self, point_cloud_sequence, max_num_points=None, points_margin=1000):
         self.scene_manager.add_visual('local')
-        self.scene_manager.point_clouds['local'].initialize_data(point_cloud_sequence.num_points + points_margin)
+        if max_num_points is None:
+            max_num_points = point_cloud_sequence.num_points + points_margin
+        self.scene_manager.point_clouds['local'].initialize_data(max_num_points)
 
     # Rendering update helpers
 
