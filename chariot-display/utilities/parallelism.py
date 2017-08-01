@@ -403,12 +403,20 @@ class DoubleBuffer(object):
 
 class DoubleBufferedProcess(Process):
     """A Process which supports double-buffering.
-    Assumes the child writes to the buffer and the parent reads and swaps the buffer."""
+    Assumes the child writes to the buffer and the parent reads and swaps the buffer,
+    though other configurations might also work well with this interface.
+    DoubleBufferFactory needs to return an object which is a DoubleBuffer without any
+    calling arguments.
+    """
     def __init__(self, DoubleBufferFactory, max_input_queue_size, max_output_queue_size,
                  *args, **kwargs):
         super(DoubleBufferedProcess, self).__init__(
             max_input_queue_size, max_output_queue_size, *args, **kwargs)
         self.double_buffer = DoubleBufferFactory()
+
+    @property
+    def read_buffer(self):
+        return self.double_buffer.read_buffer
 
     # Child methods
 
@@ -450,6 +458,10 @@ class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGe
     """Abstract base class for a Loader/Generator which runs in a separate process.
     Implementation requires implementing the on_write_to_buffer, marshal_output, and
     unmarshal_output methods.
+    LoaderGeneratorFactory needs to return an object which is a Loader and a Generator
+    without any calling arguments.
+    DoubleBufferFactory needs to return an object which is a DoubleBuffer without any
+    calling arguments.
     """
     def __init__(self, LoaderGeneratorFactory, DoubleBufferFactory, *args, **kwargs):
         super(LoaderGeneratorProcess, self).__init__(

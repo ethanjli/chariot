@@ -528,7 +528,7 @@ class TestDoubleBufferSynchronization(unittest.TestCase):
 
 class ValueDoubleBufferedProcess(parallelism.DoubleBufferedProcess):
     def __init__(self, *args, **kwargs):
-        super(ValueDoubleBufferedProcess, self).__init__(ValueDoubleBuffer, 10, 10)
+        super(ValueDoubleBufferedProcess, self).__init__(ValueDoubleBuffer, 1, 1)
 
     # From DoubleBufferedProcess
 
@@ -563,7 +563,6 @@ class TestDoubleBufferedProcess(unittest.TestCase):
         self.assertEqual(self.process.receive_output(), 'started',
                          'Incorrect initialization')
         self.assert_lock_state(False, True, 'Incorrect initialization')
-        self.assertEqual(self.process.double_buffer.read_id, 0, 'Incorrect initialization')
 
     def is_unlocked(self, lock):
         previously_unlocked = lock.acquire(False)

@@ -1,10 +1,10 @@
 """Interfaces for loading arrays, supporting parallel processing."""
-import parallelism
 import multiprocessing
 import operator
 
 import numpy as np
-from numpy.ctypeslib import as_array
+
+from utilities import parallelism
 
 class ArraySource(object):
     """Abstract base interface for things which output constant-shape arrays."""
@@ -22,7 +22,9 @@ class ArraySource(object):
         return None
 
 class ArraysSource(object):
-    """Abstract base interface for things which output constant-shape arrays of different shapes."""
+    """Abstract base interface for things which output multiple arrays.
+    Each array may be of a different shape.
+    """
 
     @property
     def array_ctypes(self):
@@ -38,42 +40,49 @@ class ArraysSource(object):
 
 # PARALLEL LOADING
 
-class DoubleBuffer(parallelism.DoubleBuffer):
+class SynchronizedBuffer(object):
     def __init__(self):
-        super(DoubleBuffer, self).__init__()
-        self._array_bases = [None, None]
-        self._arrays = [None, None]
+        self.__shared_base = None
+        self.array = None
 
     def initialize(self, ctype, shape):
         num_elements = reduce(operator.mul, shape, 1)
+        self.__shared_base = multiprocessing.Array(ctype, num_elements)
+        self.buffer = np.ctypeslib.as_array(self.__shared_base.get_obj()).reshape(*shape)
 
-        self._array_bases[0] = multiprocessing.Array(ctype, num_elements)
-        self._array_bases[1] = multiprocessing.Array(ctype, num_elements)
+class DoubleBuffer(parallelism.DoubleBuffer):
+    def __init__(self):
+        super(DoubleBuffer, self).__init__()
+        self._arrays = [SynchronizedBuffer(), SynchronizedBuffer()]
 
-        self._arrays[0] = np.ctypeslib.as_array(
-            self._array_bases[0].get_obj()).reshape(*shape)
-        self._arrays[1] = as_array(
-            self._array_bases[1].get_obj()).reshape(*shape)
+    def initialize(self, ctype, shape):
+        for array in self._arrays:
+            array.initialize(ctype, shape)
 
     def get_buffer(self, buffer_id):
-        return self._arrays[buffer_id]
+        return self._arrays[buffer_id].buffer
 
 class ParallelLoader(parallelism.LoaderGeneratorProcess, ArraySource):
-    """Loads numpy arrays sequentially in a separate process into shared memory."""
+    """Loads numpy arrays sequentially in a separate process into shared memory.
+    ArraySourceLoaderGeneratorFactory should return an object which is a Loader,
+    a Generator, and also an ArraySource. This object should generate an array of
+    constant shape.
+    """
     def __init__(self, ArraySourceLoaderGeneratorFactory, *args, **kwargs):
         super(ParallelLoader, self).__init__(
-            DoubleBuffer(), ArraySourceLoaderGeneratorFactory, *args, **kwargs)
-        self._buffer.initialize(self.loader.array_ctype(),
-                                self.loader.array_shape())
+            ArraySourceLoaderGeneratorFactory, DoubleBuffer, *args, **kwargs)
+        self.double_buffer.initialize(self.loader.array_ctype(),
+                                      self.loader.array_shape())
+
+    # From DoubleBufferedProcess
+
+    def on_write_to_buffer(self, data, write_buffer):
+        np.copyto(write_buffer, data)
 
     # From LoaderGeneratorProcess
 
-    def _on_load(self, loaded_next):
-        np.copyto(self._buffer.write_buffer, loaded_next)
-        return True
-
-    def _process_result(self, result):
-        return self._buffer.read_buffer
+    def unmarshal_output(self, marshalled, read_buffer):
+        return read_buffer
 
     # From ArraySource
 
