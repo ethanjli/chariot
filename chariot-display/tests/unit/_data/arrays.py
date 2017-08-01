@@ -27,7 +27,7 @@ class ArrayDoubleBufferClient(parallelism.DoubleBufferedProcess):
             time.sleep(0.05)
             self.write_to_buffer(make_small_array(next_input[1]))
         elif next_input[0] == 'read':
-            self.send_output(self.unmarshal_output(None, self.double_buffer.read_buffer))
+            self.send_output(self.double_buffer.read_buffer)
         elif next_input[0] == 'swap':
             self.swap_buffers()
             self.send_output('swap')
@@ -39,9 +39,6 @@ class ArrayDoubleBufferClient(parallelism.DoubleBufferedProcess):
 
     def on_write_to_buffer(self, data, write_buffer):
         np.copyto(write_buffer, data)
-
-    def unmarshal_output(self, marshalled, read_buffer):
-        return read_buffer
 
 class TestArrayDoubleBuffer(unittest.TestCase):
     def parallelsafe_setUp(self):
@@ -92,12 +89,15 @@ class TestArrayDoubleBuffer(unittest.TestCase):
             self.process.terminate()
 
 class ArrayLoader(data.DataLoader, data.DataGenerator, arrays.ArraySource):
-    def __init__(self):
+    def __init__(self, limit):
         self.i = 0
+        self.limit = limit
 
     # From DataGenerator
 
     def next(self):
+        if self.i >= self.limit:
+            raise StopIteration
         result = make_small_array(self.i)
         self.i += 1
         return result
@@ -112,5 +112,26 @@ class ArrayLoader(data.DataLoader, data.DataGenerator, arrays.ArraySource):
         return ctypes.c_int
 
     @property
-    def array_shapes(self):
+    def array_shape(self):
         return (2, 2)
+
+class TestArrayParallelLoader(unittest.TestCase):
+    def setUp(self):
+        self.loader = None
+
+    def test_generation(self):
+        self.loader = arrays.ParallelLoader(lambda: ArrayLoader(20))
+        self.loader.load()
+        for i in range(20):
+            self.assertEqual(next(self.loader).tolist(), make_small_array(i).tolist())
+        try:
+            print(next(self.loader))
+            self.assertFalse(True, 'Incorrect stopping behavior')
+        except StopIteration:
+            pass
+        self.loader.stop_loading()
+
+    def tearDown(self):
+        if self.loader is not None:
+            self.loader.stop_loading()
+

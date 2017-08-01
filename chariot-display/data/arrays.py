@@ -71,8 +71,8 @@ class ParallelLoader(parallelism.LoaderGeneratorProcess, ArraySource):
     def __init__(self, ArraySourceLoaderGeneratorFactory, *args, **kwargs):
         super(ParallelLoader, self).__init__(
             ArraySourceLoaderGeneratorFactory, DoubleBuffer, *args, **kwargs)
-        self.double_buffer.initialize(self.loader.array_ctype(),
-                                      self.loader.array_shape())
+        self.double_buffer.initialize(self.loader.array_ctype,
+                                      self.loader.array_shape)
 
     # From DoubleBufferedProcess
 
@@ -88,9 +88,9 @@ class ParallelLoader(parallelism.LoaderGeneratorProcess, ArraySource):
 
     @property
     def array_ctype(self):
-        return self._loader.get_array_ctype()
+        return self._loader.array_ctype
 
     @property
     def array_shape(self):
-        return self._loader.get_array_shape()
+        return self._loader.array_shape
 
