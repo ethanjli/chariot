@@ -81,6 +81,6 @@ class FileSequenceLoader(data.DataLoader, data.DataGenerator):
         return self.sequence.num_samples
 
 class FileSequenceConcurrentLoader(concurrent.Loader, FileSequenceLoader):
-    def __init__(self, sequence, max_size, discard_upon_none, *args, **kwargs):
-        super(FileSequenceConcurrentLoader, self).__init__(max_size, False, sequence, *args, **kwargs)
+    def __init__(self, sequence, max_size, *args, **kwargs):
+        super(FileSequenceConcurrentLoader, self).__init__(max_size, sequence, *args, **kwargs)
 

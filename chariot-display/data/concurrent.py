@@ -16,13 +16,11 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
     the next data, or None if the next data does not exist. If it returns an
     empty tuple instead of None, next() will never return None.
     """
-    def __init__(self, max_size, discard_upon_none, *args, **kwargs):
+    def __init__(self, max_size, *args, **kwargs):
         super(Loader, self).__init__(*args, **kwargs)
-        self.__loader_thread = None
         self._data_queue = Queue(max_size)
-        self._run = True
+        self._run = False
         self._load = False
-        self._discard_upon_none = discard_upon_none
 
     def _on_load(self):
         """Called every time the data loader is about to add data.
@@ -49,9 +47,7 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
         next_data = self.load_next()
         self._enqueue(next_data, block, timeout)
         if next_data is None:
-            self._load = False
-            if self._discard_upon_none:
-                self._run = False
+            self._run = False
 
     # From DataLoader
 
@@ -72,20 +68,20 @@ class Loader(data.DataLoader, data.DataGenerator, concurrency.Thread):
     def reset(self):
         """Stops the thread which is concurrently loading new data.
         After this is called, we can call load again."""
-        if self.__loader_thread is not None:
+        if self._thread is not None:
             self.stop_loading()
         super(Loader, self).reset()
-        self._run = True
         self._load = True
 
     def next(self, block=True, timeout=1):
         """Gets the next loaded data and returns it.
         If no data is loaded, raises StopIteration."""
-        if not self._run:
+        if not self._load:
             raise StopIteration
         next_data = parallelism.get_queue_poll(
             self._data_queue, block, timeout)  # Allow KeyboardInterrupts to interrupt get
         if next_data is None:
+            self._load = False
             raise StopIteration
         return next_data
 

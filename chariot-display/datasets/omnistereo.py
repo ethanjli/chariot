@@ -3,7 +3,7 @@
 from os import path
 import ctypes
 
-from data import concurrent, arrays, point_clouds
+from data import arrays, point_clouds
 import sequences
 import datasets
 
@@ -57,7 +57,7 @@ class PointCloudSequenceConcurrentLoader(sequences.FileSequenceConcurrentLoader,
                                          arrays.ArraysSource):
     def __init__(self, sequence, max_size=10, max_num_points=None):
         super(PointCloudSequenceConcurrentLoader, self).__init__(
-            sequence, max_size, False)
+            sequence, max_size)
         self.max_num_points = max_num_points
 
     # From ArraysSource

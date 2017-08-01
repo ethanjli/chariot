@@ -95,10 +95,13 @@ class TestFileSequenceLoader(unittest.TestCase):
 class TestFileSequenceConcurrentLoader(unittest.TestCase):
     def setUp(self):
         self.sequence = TextFileSequence(SEQUENCE_PARENT_PATH, suffix='.txt')
-        self.loader = sequences.FileSequenceConcurrentLoader(self.sequence, 2, False)
+
+    def parallelsafe_setUp(self):
+        self.loader = sequences.FileSequenceConcurrentLoader(self.sequence, 2)
         self.loader.load()
 
     def test_next(self):
+        self.parallelsafe_setUp()
         contents = next(self.loader)
         self.assertEqual(contents, 'foo',
                          'Incorrect loading')
@@ -116,12 +119,17 @@ class TestFileSequenceConcurrentLoader(unittest.TestCase):
             pass
 
     def test_reset(self):
+        self.parallelsafe_setUp()
+        self.loader.load()
         self.test_next()
         self.loader.reset()
+        self.loader.load()
         self.test_next()
         self.loader.reset()
+        self.loader.load()
         self.test_next()
         self.loader.reset()
+        self.loader.load()
         self.test_next()
 
     def tearDown(self):
