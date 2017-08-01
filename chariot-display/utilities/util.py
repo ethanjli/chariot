@@ -72,8 +72,11 @@ def grid_data_to_list_data(data):
     """Reshapes data shaped as a grid (as in an image) to a list array, one row per grid cell."""
     return data.reshape(data.shape[0] * data.shape[1], data.shape[2])
 
-def update_list_data_buffer(list_data_buffer, new_list_data, previous_list_data_size):
-    previous_list_data_size = min(previous_list_data_size, list_data_buffer.shape[0])
+def update_list_data_buffer(list_data_buffer, new_list_data, previous_list_data_size=None):
+    if previous_list_data_size is None:
+        previous_list_data_size = list_data_buffer.shape[0]
+    else:
+        previous_list_data_size = min(previous_list_data_size, list_data_buffer.shape[0])
     list_data_size = new_list_data.shape[0]
     if list_data_size > list_data_buffer.shape[0]:
         print('Warning: Can only add ' + str(list_data_buffer.shape[0]) + ' of the ' +

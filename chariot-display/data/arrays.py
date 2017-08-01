@@ -59,6 +59,8 @@ class DoubleBuffer(parallelism.DoubleBuffer):
         for array in self._arrays:
             array.initialize(ctype, shape)
 
+    # From parallelism.DoubleBuffer
+
     def get_buffer(self, buffer_id):
         return self._arrays[buffer_id].buffer
 

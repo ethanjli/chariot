@@ -121,15 +121,18 @@ class TestArrayParallelLoader(unittest.TestCase):
 
     def test_generation(self):
         self.loader = arrays.ParallelLoader(lambda: ArrayLoader(20))
-        self.loader.load()
-        for i in range(20):
-            self.assertEqual(next(self.loader).tolist(), make_small_array(i).tolist())
-        try:
-            print(next(self.loader))
-            self.assertFalse(True, 'Incorrect stopping behavior')
-        except StopIteration:
-            pass
-        self.loader.stop_loading()
+        for _ in range(5):
+            self.loader.load()
+            for i in range(20):
+                self.assertEqual(next(self.loader).tolist(), make_small_array(i).tolist(),
+                                 'Incorrect generation')
+            try:
+                print(next(self.loader))
+                self.assertFalse(True, 'Incorrect stopping behavior')
+            except StopIteration:
+                pass
+            self.loader.stop_loading()
+            self.loader.reset()
 
     def tearDown(self):
         if self.loader is not None:
