@@ -4,6 +4,7 @@ import time
 import random
 import sys
 import ctypes
+import multiprocessing
 from multiprocessing import Value
 try:
     from Queue import Empty, Full
@@ -12,6 +13,61 @@ except ImportError:
 
 from data import data
 from utilities import parallelism
+
+class TestPollingQueue(unittest.TestCase):
+    def setUp(self):
+        self.queue = multiprocessing.Queue(1)
+
+    def test_empty_queue(self):
+        try:
+            parallelism.get_queue_poll(self.queue, False)
+            self.assertFalse(True, 'Incorrect queue result')
+        except Empty:
+            pass
+
+    def test_full_queue(self):
+        parallelism.put_queue_poll(self.queue, 4)
+        try:
+            parallelism.put_queue_poll(self.queue, 8, False)
+            self.assertFalse(True, 'Incorrect queue result')
+        except Full:
+            pass
+        self.assertEqual(parallelism.get_queue_poll(self.queue), 4, 'Incorrect queue result')
+
+    def test_put_queue(self):
+        # Nonblocking write, blocking read
+        try:
+            parallelism.put_queue_poll(self.queue, 4, False)
+        except Full:
+            self.assertFalse(True, 'Incorrect queue result')
+        self.assertEqual(parallelism.get_queue_poll(self.queue), 4, 'Incorrect queue result')
+        # Nonblocking write, nonblocking read
+        try:
+            parallelism.put_queue_poll(self.queue, 8, False)
+        except Full:
+            self.assertFalse(True, 'Incorrect queue result')
+        for _ in range(20):
+            try:
+                result = parallelism.get_queue_poll(self.queue, False)
+                break
+            except Empty:
+                time.sleep(0.05)
+        else:
+            self.assertFalse(True, 'Nonblocking read timed out')
+        self.assertEqual(result, 8, 'Incorrect queue result')
+        # Blocking write, blocking read
+        parallelism.put_queue_poll(self.queue, 4)
+        self.assertEqual(parallelism.get_queue_poll(self.queue), 4, 'Incorrect queue result')
+        # Blocking write, nonblocking read
+        parallelism.put_queue_poll(self.queue, 8)
+        for _ in range(20):
+            try:
+                result = parallelism.get_queue_poll(self.queue, False)
+                break
+            except Empty:
+                time.sleep(0.05)
+        else:
+            self.assertFalse(True, 'Nonblocking read timed out')
 
 class ChildException(Exception):
     pass
@@ -71,6 +127,8 @@ class HangingProcess(parallelism.Process):
     def __init__(self, test_case):
         super(HangingProcess, self).__init__(1, 1)
         self.test_case = test_case
+        self.event = multiprocessing.Event()
+        self.lock = multiprocessing.Lock()
 
     def on_run_start(self):
         self.send_output('started')
@@ -86,6 +144,12 @@ class HangingProcess(parallelism.Process):
         elif next_input == 'hang_send_output':
             self.send_output('ready to hang')
             self.send_output('hanging')
+        elif next_input == 'hang_polling_event':
+            self.send_output('ready to hang')
+            parallelism.wait_event_poll(self.event, 1.0)
+        elif next_input == 'hang_polling_lock':
+            self.send_output('ready to hang')
+            parallelism.acquire_lock_poll(self.lock, timeout=1.0)
         else:
             raise NotImplementedError('Handler for input ' + next_input + ' not implemented')
 
@@ -149,6 +213,27 @@ class TestProcess(unittest.TestCase):
         self.assert_kill_interrupt()
         self.hanging_process.terminate()
 
+    def test_interrupt_event_polling_wait(self):
+        self.hanging_process.run_parallel()
+        self.assertEqual(self.hanging_process.receive_output(), 'started',
+                         'Incorrect initialization execution')
+        self.hanging_process.send_input('hang_polling_event')
+        self.assertEqual(self.hanging_process.receive_output(), 'ready to hang',
+                         'Incorrect response')
+        self.assert_kill_interrupt()
+        self.hanging_process.terminate()
+
+    def test_interrupt_lock_polling_acquire(self):
+        self.hanging_process.run_parallel()
+        self.assertEqual(self.hanging_process.receive_output(), 'started',
+                         'Incorrect initialization execution')
+        with self.hanging_process.lock:
+            self.hanging_process.send_input('hang_polling_lock')
+            self.assertEqual(self.hanging_process.receive_output(), 'ready to hang',
+                             'Incorrect response')
+            self.assert_kill_interrupt()
+        self.hanging_process.terminate()
+
     def test_runtime_exception_on_receive_output(self):
         self.hanging_process.run_parallel()
         self.assertEqual(self.hanging_process.receive_output(), 'started',
@@ -199,6 +284,32 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(self.loose_process.receive_output(), i * 2,
                              'Incorrect process synchronization')
         self.assert_empty(self.loose_process._output_queue)
+
+    def test_tight_restart(self):
+        sys.stdout.write('tight[')
+        for _ in range(5):
+            self.test_tight_execute()
+            self.tight_process.terminate()
+            self.tight_process.flush_queues()
+            sys.stdout.write('.')
+        print(']')
+
+    def test_loose_restart(self):
+        sys.stdout.write('loose[')
+        for _ in range(5):
+            self.test_loose_execute()
+            self.loose_process.flush_queues()
+            sys.stdout.write('.')
+        print(']')
+
+    def test_loose_fill_restart(self):
+        sys.stdout.write('loose_fill[')
+        for _ in range(5):
+            self.test_loose_fill()
+            self.loose_process.terminate()
+            self.loose_process.flush_queues()
+            sys.stdout.write('.')
+        print(']')
 
     def tearDown(self):
         if self.tight_process.process_running:

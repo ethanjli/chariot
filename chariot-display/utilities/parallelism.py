@@ -100,12 +100,12 @@ def put_queue_poll(queue, obj, block=True, timeout=None):
     """Gets the next item in the queue.
     If block is True and timeout is not None, periodically polls for interrupts while waiting
     so interrupts can be caught.
-    If block is False, raises Empty if there is nowhere to put.
+    If block is False, raises Full if there is nowhere to put.
     """
     while block:
         try:
             return queue.put(obj, block, timeout)
-        except Empty:
+        except Full:
             pass
     return queue.put_nowait(obj)
 
@@ -329,6 +329,10 @@ class Process(object):
     def kill(self, sig=signal.SIGINT):
         os.kill(self.pid, sig)
 
+    def flush_queues(self):
+        flush_queue(self._input_queue)
+        flush_queue(self._output_queue)
+
 # DOUBLE-BUFFERED SYNCHRONIZATION
 
 class DoubleBuffer(object):
@@ -510,8 +514,7 @@ class LoaderGeneratorProcess(DoubleBufferedProcess, data.DataLoader, data.DataGe
     def reset(self):
         self.stop_loading()
         self.double_buffer.reset()
-        flush_queue(self._input_queue)
-        flush_queue(self._output_queue)
+        self.flush_queues()
 
     # From DataLoader
 
