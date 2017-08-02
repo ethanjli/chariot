@@ -214,7 +214,8 @@ if extract_plane_flag == 1
     
     
     Idis_MRF = showPlanes(SP, PlaneIdx, PlaneHypos);
-    
+   
+    [x, y, z] = calc_point_from_disp_theta_phi(Idis_MRF, -pi, pi, 0, -pi/4, pi/4); 
     if show_results
        
         figure(3)
