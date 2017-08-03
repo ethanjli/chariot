@@ -14,13 +14,19 @@ class PointCloudSequence(sequences.FileSequence, point_clouds.Sequence):
     def __init__(self, *args, **kwargs):
         if 'suffix' not in kwargs or not kwargs['suffix'].endswith('.mat'):
             kwargs['suffix'] = '.mat'
+        if 'array_name' in kwargs:
+            array_name = kwargs['array_name']
+            del kwargs['array_name']
+        else:
+            array_name = 'S'
         super(PointCloudSequence, self).__init__(*args, **kwargs)
+        self.array_name = array_name
         self._num_points = None
         self._num_samples = None
 
     def __getitem__(self, index):
         point_cloud = point_clouds.PointCloud()
-        point_cloud.load_from_mat(self.file_path(index))
+        point_cloud.load_from_mat(self.file_path(index), self.array_name)
         return point_cloud
 
     @property
@@ -85,7 +91,16 @@ class Dataset(datasets.Dataset):
             'point_cloud': {
                 'raw': {
                     'files': PointCloudSequence(
-                        path.join(sequences_root_path, 'Rectification'), 'point_cloud_stereo_'
+                        path.join(sequences_root_path, 'Rectification'),
+                        prefix='point_cloud_stereo_',
+                        array_name='S'
+                    )
+                },
+                'mrf': {
+                    'files': PointCloudSequence(
+                        path.join(sequences_root_path, 'Stereo_Disp'),
+                        prefix='Pointcloud_MRF',
+                        array_name='points'
                     )
                 }
             }

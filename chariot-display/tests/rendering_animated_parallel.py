@@ -7,8 +7,8 @@ VIEW_PRESETS = scene.VIEW_PRESETS
 class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
-        self.dataset = omnistereo.Dataset('Results_26-Jul-2017')
-        self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
+        self.dataset = omnistereo.Dataset('Results_02-Aug-2017')
+        self.sequence = self.dataset.sequences['point_cloud']['mrf']['files']
         self.point_cloud_loader = point_clouds.ParallelLoader(
             lambda: omnistereo.PointCloudSequenceConcurrentLoader(
                 self.sequence, max_num_points=300000))
