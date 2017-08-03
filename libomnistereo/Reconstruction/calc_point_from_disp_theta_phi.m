@@ -18,10 +18,10 @@ theta = 1 : depth_width;
 theta = repmat (theta, depth_height, 1);
 theta = (thetaMax - thetaMin)/depth_width * theta  - thetaMin;
 
-
-phi = 1 : depth_height;
+phi =  1 : depth_height;
 phi = repmat (phi, depth_width, 1)';
 phi = (phiMax - phiMin)/depth_height * phi  - phiMin;
+
 
 %calculate x, y, z
 z = depth .* sin(phi);
