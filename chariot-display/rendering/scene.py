@@ -41,7 +41,7 @@ VIEW_PRESETS = {
     '1': {  # Elevated third-person view
         'camera': {   # Camera parameters
             'fov': 30,
-            'elevation': -5,
+            'elevation': 15,
             'azimuth': 90,
             'distance': 20,
             'center': (0, 0.9, 1.2)
