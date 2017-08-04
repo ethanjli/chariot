@@ -1,11 +1,11 @@
 function opts = init()
 % returns root_dir, adds path if no output specified
 
-opts.root_dir = '/home/chariot/Repositories/chariot-telepresence/libomnistereo';
-opts.data_dir = '/home/chariot/Data/Geiger';
+opts.root_dir = '/home/tj/Repositories/chariot/libomnistereo';
+opts.data_dir = '/home/tj/Data/Geiger';
 
 % Image Folder (Test Data Folder)
-opts.img_folder = '/home/chariot/Data/Geiger';
+opts.img_folder = '/home/tj/Data/Geiger';
 
 opts.sys_lib_dir = '/usr/lib/x86_64-linux-gnu';
 opts.opencv_lib_dir = '/usr/lib/x86_64-linux-gnu';

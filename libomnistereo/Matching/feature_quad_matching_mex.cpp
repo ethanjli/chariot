@@ -19,10 +19,14 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
     std::string camname2        = std::string(camName2);
     std::string mask_folder     = std::string(mask_folderN);
 
+    
     char fmL[500], fmR[500], fnL[500], fnR[500], fnB[500], fmB[500], fmL1[500], fmR1[500];
 
     sprintf(fmL1,"%s/Maske_Left.png",mask_folder.c_str());
     sprintf(fmR1,"%s/Maske_Right.png",mask_folder.c_str());
+
+    
+
     Mat maske_left  = cvLoadImageM( fmL1, CV_LOAD_IMAGE_GRAYSCALE );
     Mat maske_right = cvLoadImageM( fmR1, CV_LOAD_IMAGE_GRAYSCALE );
     
@@ -47,8 +51,6 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
     Mat prev_left = cvLoadImageM( fnL, CV_LOAD_IMAGE_GRAYSCALE );
     Mat prev_right = cvLoadImageM( fnR, CV_LOAD_IMAGE_GRAYSCALE );
 
-    std::cout << "filename: " << fnL << std::endl;
-    //std::cout << "Previous image empty: " << prev_left.empty() << std::endl;
     /* ********************** */
     //-- Step 1: DETECTION -- //
     /* ********************** */
@@ -59,6 +61,7 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
 
     detector->detect(prev_left, keypoints_prev_left_all);
     detector->detect(prev_right, keypoints_prev_right_all);
+
 
     if (MatchingType.compare("Fisheye")==0)
     {
@@ -76,12 +79,15 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
     extractor->compute( prev_left, keypoints_prev_left, descriptors_prev_left);
     extractor->compute( prev_right, keypoints_prev_right, descriptors_prev_right);
 
+
     // load images
         sprintf( fmL, "%s/%s/%s/data/%010d.png", seqfolder.c_str(), seqname.c_str(), camname1.c_str(), q+1);
         sprintf( fmR, "%s/%s/%s/data/%010d.png", seqfolder.c_str(), seqname.c_str(), camname2.c_str(), q+1);
 
+
     Mat cur_left = cvLoadImageM( fmL, CV_LOAD_IMAGE_GRAYSCALE );
     Mat cur_right = cvLoadImageM( fmR, CV_LOAD_IMAGE_GRAYSCALE );
+
 
     Mat correspondFeatures; 
     correspondFeatures = Mat ( cvSize(prev_left.cols*2, prev_left.rows + cur_left.rows), CV_8UC3 );
@@ -103,7 +109,6 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
         select_nonvehicle_keypoints ( keypoints_cur_right,  keypoints_cur_right_all,  maske_right);
     }
             
-    
     /* **************************************************** */
     //-- Step 2: Calculate descriptors (feature vectors) -- //
     /* **************************************************** */
@@ -137,7 +142,7 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
         matcher_LR_LeRi_Pre.clear();
         matcher_LR_LeRi_Cur.clear();
         matcher_LR_Ri_PreCur.clear();   
-        
+
     } else if (MatchingType.compare("L2") == 0 ) {
         
         BFMatcher matcher_LR_Le_PreCur( NORM_L2);
@@ -176,8 +181,6 @@ void feature_matching_quad ( int frame_number, char* detectorN, char* descriptor
     sprintf( korres_points, "%s/KorresPoints_LR_%010d_%010d.txt", save_name, q, q+1);
     KorresPoints = fopen( korres_points, "a");
 
-    //cout << "Image Number:" << q << endl;
-    //cout << "Matches:" << good_matches_Le_PreCur.size() << endl;
 
     
     int matches_fisheye;

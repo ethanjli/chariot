@@ -16,11 +16,11 @@ depth_height = size(depth, 1);
 
 theta = 1 : depth_width;
 theta = repmat (theta, depth_height, 1);
-theta = (thetaMax - thetaMin)/depth_width * theta  - thetaMin;
+theta = (thetaMax - thetaMin)/depth_width * theta  + thetaMin;
 
-phi =  1 : depth_height;
+phi = fliplr( 1 : depth_height);
 phi = repmat (phi, depth_width, 1)';
-phi = (phiMax - phiMin)/depth_height * phi  - phiMin;
+phi = (phiMax - phiMin)/depth_height * phi  + phiMin;
 
 
 %calculate x, y, z

@@ -1,5 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 function run_reconstruction ()
 
 clear all; close all; clc;
@@ -216,13 +215,17 @@ if extract_plane_flag == 1
     Idis_MRF = showPlanes(SP, PlaneIdx, PlaneHypos);
    
     %Calculate from Idisp_MRF, Img_new
-    [x, y, z] = calc_point_from_disp_theta_phi(Idis_MRF, -pi, pi, -pi/16, pi/16); 
+    [x, y, z] = calc_point_from_disp_theta_phi(Idis_MRF, -pi, pi, -pi/4, pi/4); 
 
     x = reshape(x, 1, 300000);
     y = reshape(y, 1, 300000);
     z = reshape(z, 1, 300000);
     Img_new = reshape(Img_new, 3, 300000);
     points = cat(1, x, y, z, Img_new);
+    
+    Idis_Mapped = reshape(Idis_MRF, 1, 300000);
+    
+    points = points(:, Idis_MRF > 0.05);
     save( sprintf('%sPointcloud_MRF%06d.mat', save_folder_disp, frame_number), 'points');
     if show_results
        
