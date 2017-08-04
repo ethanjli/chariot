@@ -14,7 +14,7 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).register_canvas(canvas)
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
-        self.init_local_visual(self.sequence)
+        self.init_local_visual(self.sequence, max_num_points=300000)
         self.run_concurrent()
 
     def execute(self):
