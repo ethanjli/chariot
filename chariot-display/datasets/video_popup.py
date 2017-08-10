@@ -7,7 +7,7 @@ import datasets
 
 # DATASET DEFINITION
 
-class Dataset(datasets.Dataset):
+class KittiDataset(datasets.Dataset):
     """Interface for VideoPopup output datasets."""
     def __init__(self, name, parent_path=None):
         self.name = name

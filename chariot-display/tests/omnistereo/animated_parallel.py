@@ -26,7 +26,7 @@ class Animator(scene.SceneAnimator):
         try:
             self.update_point_cloud('omni', next(self.point_cloud_loader))
         except StopIteration:
-            print('Done, repeating animation in 2 seconds.')
+            print('Done, repeating animation.')
             self.point_cloud_loader.reset()
             self.point_cloud_loader.load()
 
