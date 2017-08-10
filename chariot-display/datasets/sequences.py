@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-"""Functions and classes for loading of data from Oxford datasets."""
+"""Functions and classes for loading of data from files."""
 from os import path
 
 from utilities import files
