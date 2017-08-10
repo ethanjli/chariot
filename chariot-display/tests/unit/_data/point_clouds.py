@@ -12,12 +12,13 @@ from data import data, arrays, point_clouds
 
 _PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 
-POINT_CLOUD_MAT_PATH = os.path.join(_PACKAGE_PATH, 'point_cloud.mat')
+OMNI_MAT_PATH = os.path.join(_PACKAGE_PATH, 'point_cloud_omni.mat')
+FRONT_MAT_PATH = os.path.join(_PACKAGE_PATH, 'point_cloud_front.mat')
 
 class TestLoading(unittest.TestCase):
     def setUp(self):
         self.point_cloud = point_clouds.PointCloud()
-        self.point_cloud.load_from_mat(POINT_CLOUD_MAT_PATH, 'S', transpose=True)
+        self.point_cloud.load_from_mat(OMNI_MAT_PATH, 'S', transpose=True)
 
     def test_shape(self):
         self.assertEqual(self.point_cloud.points.shape, self.point_cloud.colors.shape,
