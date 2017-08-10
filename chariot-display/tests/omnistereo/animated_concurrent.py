@@ -1,4 +1,4 @@
-from datasets import omnistereo
+from datasets import point_clouds, omnistereo
 from rendering import scene
 
 VIEW_PRESETS = scene.VIEW_PRESETS
@@ -8,7 +8,7 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).__init__()
         self.dataset = omnistereo.Dataset('Omnicam_04-Aug-2017')
         self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
-        self.point_cloud_loader = omnistereo.PointCloudSequenceConcurrentLoader(self.sequence)
+        self.point_cloud_loader = point_clouds.SequenceConcurrentLoader(self.sequence)
 
     def register_canvas(self, canvas):
         super(Animator, self).register_canvas(canvas)

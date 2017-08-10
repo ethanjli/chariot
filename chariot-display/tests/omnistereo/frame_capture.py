@@ -6,7 +6,7 @@ import vispy.app
 import vispy.gloo
 
 from utilities import files
-from datasets import datasets, omnistereo
+from datasets import datasets, point_clouds, omnistereo
 from rendering import scene
 
 VIEW_PRESETS = scene.VIEW_PRESETS
@@ -18,7 +18,7 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).__init__()
         self.dataset = omnistereo.Dataset('Omnicam_04-Aug-2017')
         self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
-        self.point_cloud_loader = omnistereo.PointCloudSequenceConcurrentLoader(self.sequence)
+        self.point_cloud_loader = point_clouds.SequenceConcurrentLoader(self.sequence)
         self.screenshot_counter = 0
 
     def register_canvas(self, canvas):

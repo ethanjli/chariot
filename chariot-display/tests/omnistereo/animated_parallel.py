@@ -1,4 +1,5 @@
-from data import point_clouds
+from data.point_clouds import ParallelLoader
+from datasets.point_clouds import SequenceConcurrentLoader
 from datasets import omnistereo
 from rendering import scene
 
@@ -9,8 +10,8 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).__init__()
         self.dataset = omnistereo.Dataset('Omnicam_04-Aug-2017')
         self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
-        self.point_cloud_loader = point_clouds.ParallelLoader(
-            lambda: omnistereo.PointCloudSequenceConcurrentLoader(
+        self.point_cloud_loader = ParallelLoader(
+            lambda: SequenceConcurrentLoader(
                 self.sequence, max_num_points=300000))
 
     def register_canvas(self, canvas):
