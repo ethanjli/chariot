@@ -17,7 +17,7 @@ POINT_CLOUD_MAT_PATH = os.path.join(_PACKAGE_PATH, 'point_cloud.mat')
 class TestLoading(unittest.TestCase):
     def setUp(self):
         self.point_cloud = point_clouds.PointCloud()
-        self.point_cloud.load_from_mat(POINT_CLOUD_MAT_PATH)
+        self.point_cloud.load_from_mat(POINT_CLOUD_MAT_PATH, 'S', transpose=True)
 
     def test_shape(self):
         self.assertEqual(self.point_cloud.points.shape, self.point_cloud.colors.shape,

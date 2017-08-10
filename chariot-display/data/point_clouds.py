@@ -14,8 +14,10 @@ class PointCloud(arrays.ArraysSource):
         self.points = None
         self.colors = None
 
-    def load_from_mat(self, path, array_name='S'):
-        cloud = scipy.io.loadmat(path)[array_name].T
+    def load_from_mat(self, path, array_name, transpose=False):
+        cloud = scipy.io.loadmat(path)[array_name]
+        if transpose:
+            cloud = cloud.T
         self.points = cloud[:, :3]
         self.colors = cloud[:, 3:]
 

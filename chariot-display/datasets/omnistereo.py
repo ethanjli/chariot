@@ -26,7 +26,7 @@ class PointCloudSequence(sequences.FileSequence, point_clouds.Sequence):
 
     def __getitem__(self, index):
         point_cloud = point_clouds.PointCloud()
-        point_cloud.load_from_mat(self.file_path(index), self.array_name)
+        point_cloud.load_from_mat(self.file_path(index), self.array_name, transpose=True)
         return point_cloud
 
     @property
