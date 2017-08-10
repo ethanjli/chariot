@@ -10,14 +10,14 @@ scene_manager.register_canvas(scene_canvas)
 
 # Add visuals
 scene_manager.add_visual('car')
-scene_manager.add_visual('local')
+scene_manager.add_visual('omni')
 
 # Load data
 point_cloud = point_clouds.PointCloud()
-point_cloud.load_from_mat(POINT_CLOUD_MAT_PATH)
+point_cloud.load_from_mat(POINT_CLOUD_MAT_PATH, 'S', transpose=True)
 
 # Render point cloud
-scene_manager.point_clouds['local'].initialize_data(point_cloud.num_points)
-scene_manager.point_clouds['local'].update_data(point_cloud)
+scene_manager.point_clouds['omni'].initialize_data(point_cloud.num_points)
+scene_manager.point_clouds['omni'].update_data(point_cloud)
 
 scene_canvas.start_rendering()

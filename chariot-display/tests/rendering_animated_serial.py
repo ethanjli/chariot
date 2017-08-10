@@ -6,20 +6,20 @@ VIEW_PRESETS = scene.VIEW_PRESETS
 class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
-        self.dataset = omnistereo.Dataset('Results_02-Aug-2017')
-        self.sequence = self.dataset.sequences['point_cloud']['mrf']['files']
+        self.dataset = omnistereo.Dataset('Omnicam_04-Aug-2017')
+        self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
         self.point_cloud_loader = omnistereo.PointCloudSequenceLoader(self.sequence)
 
     def register_canvas(self, canvas):
         super(Animator, self).register_canvas(canvas)
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
-        self.init_local_visual(self.sequence, max_num_points=300000)
+        self.init_point_cloud_visual('omni', self.sequence, max_num_points=300000)
         self.run_concurrent()
 
     def execute(self):
         try:
-            self.update_local(next(self.point_cloud_loader))
+            self.update_point_cloud('omni', next(self.point_cloud_loader))
         except StopIteration:
             print('Done, repeating animation.')
             self.point_cloud_loader.reset()

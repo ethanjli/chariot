@@ -16,7 +16,7 @@ OUTPUT_PATH = path.join(datasets.DATASETS_PATH, 'Chariot_' + time.strftime('%Y%m
 class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
-        self.dataset = omnistereo.Dataset('Results_26-Jul-2017')
+        self.dataset = omnistereo.Dataset('Omnicam_04-Aug-2017')
         self.sequence = self.dataset.sequences['point_cloud']['raw']['files']
         self.point_cloud_loader = omnistereo.PointCloudSequenceConcurrentLoader(self.sequence)
         self.screenshot_counter = 0
@@ -25,14 +25,14 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).register_canvas(canvas)
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
-        self.init_local_visual(self.sequence, max_num_points=300000)
+        self.init_point_cloud_visual('omni', self.sequence, max_num_points=300000)
         files.make_dir_path(OUTPUT_PATH)
         self.point_cloud_loader.load()
         canvas.register_timer_observer(self)
 
     def execute(self, event):
         try:
-            self.update_local(next(self.point_cloud_loader))
+            self.update_point_cloud('omni', next(self.point_cloud_loader))
             self.scene_manager.execute(event)
 
             screenshot = vispy.gloo.util._screenshot()

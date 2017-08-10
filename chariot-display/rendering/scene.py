@@ -2,39 +2,39 @@
 import itertools
 
 from utilities import profiling, concurrency
-from visuals import mesh, point_cloud, text
+from visuals import mesh, text
+from visuals import omnistereo, video_popup
 import canvas
 
-VISUAL_NAMES = ['car', 'local']
+VISUAL_NAMES = ['car', 'omni', 'front']
 VISUALS = {
     'car': {
         'type': 'mesh',
         'class': mesh.CarModelVisual
     },
-    'local': {
+    'omni': {
         'type': 'point_cloud',
-        'class': point_cloud.LocalVisual,
+        'class': omnistereo.Visual,
         'framerate_counter': {
             'name': 'local data',
             'units': 'updates/sec'
         }
     },
-    'global': {
+    'front': {
         'type': 'point_cloud',
-        'class': point_cloud.GlobalVisual,
+        'class': video_popup.FrontVisual,
         'framerate_counter': {
-            'name': 'global data',
+            'name': 'local data',
             'units': 'updates/sec'
         }
     },
-    'front': {
+    'foobar': {
         'type': 'image',
     }
 }
 VISIBILITY_KEYS = {
-    'a': 'car',
-    's': 'local',
-    'd': 'global'
+    's': 'car',
+    'w': 'front'
 }
 
 VIEW_PRESETS = {
@@ -74,8 +74,8 @@ class SceneManager():
         self._presets = presets
 
         self.point_clouds = {
-            'local': None,
-            'global': None
+            'omni': None,
+            'front': None
         }
         self.meshes = {
             'car': None
@@ -191,14 +191,15 @@ class SceneAnimator(concurrency.Thread):
     def init_car_visual(self):
         self.scene_manager.add_visual('car')
 
-    def init_local_visual(self, point_cloud_sequence, max_num_points=None, points_margin=1000):
-        self.scene_manager.add_visual('local')
+    def init_point_cloud_visual(self, name, point_cloud_sequence, max_num_points=None,
+                                points_margin=1000):
+        self.scene_manager.add_visual(name)
         if max_num_points is None:
             max_num_points = point_cloud_sequence.num_points + points_margin
-        self.scene_manager.point_clouds['local'].initialize_data(max_num_points)
+        self.scene_manager.point_clouds[name].initialize_data(max_num_points)
 
     # Rendering update helpers
 
-    def update_local(self, point_cloud):
-        self.scene_manager.point_clouds['local'].update_data(point_cloud)
+    def update_point_cloud(self, name, point_cloud):
+        self.scene_manager.point_clouds[name].update_data(point_cloud)
 

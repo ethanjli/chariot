@@ -66,23 +66,3 @@ class Visual(visuals.ShadedVisual):
     def update_scale(self, pixel_scale):
         self.set_param('u_size', 2 * pixel_scale)
 
-class LocalVisual(Visual):
-    def __init__(self):
-        super(LocalVisual, self).__init__()
-
-    @staticmethod
-    def base_transform():
-        transform = vispy.visuals.transforms.AffineTransform()
-        transform.rotate(-90.0, (1, 0, 0))
-        transform.translate((0, 1.5, 0))
-        return transform
-
-class GlobalVisual(Visual):
-    def __init__(self):
-        super(LocalVisual, self).__init__()
-
-    @staticmethod
-    def base_transform():
-        transform = vispy.visuals.transforms.AffineTransform()
-        return transform
-
