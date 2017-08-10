@@ -13,8 +13,6 @@ class TestDataset(unittest.TestCase):
         self.dataset = omnistereo.Dataset('omnistereo', parent_path=DATASETS_PATH)
 
     def test_init(self):
-        print(self.dataset.parent_path)
-        print(DATASETS_PATH)
         self.assertEqual(self.dataset.parent_path, DATASETS_PATH,
                          'Incorrect parent path')
 

@@ -22,14 +22,16 @@ class Dataset(datasets.Dataset):
                     'files': point_clouds.Sequence(
                         path.join(sequences_root_path, 'Rectification'),
                         prefix='point_cloud_stereo_',
-                        array_name='S'
+                        array_name='S',
+                        transpose=True
                     )
                 },
                 'mrf': {
                     'files': point_clouds.Sequence(
                         path.join(sequences_root_path, 'Stereo_Disp'),
                         prefix='Pointcloud_MRF',
-                        array_name='points'
+                        array_name='points',
+                        transpose=True
                     )
                 }
             }

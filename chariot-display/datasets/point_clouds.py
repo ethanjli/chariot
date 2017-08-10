@@ -16,15 +16,22 @@ class Sequence(sequences.FileSequence, point_clouds.Sequence):
             array_name = kwargs['array_name']
             del kwargs['array_name']
         else:
-            array_name = 'S'
+            array_name = 'points'
+        if 'transpose' in kwargs:
+            transpose = kwargs['transpose']
+            del kwargs['transpose']
+        else:
+            transpose = False
         super(Sequence, self).__init__(*args, **kwargs)
         self.array_name = array_name
+        self.transpose = transpose
         self._num_points = None
         self._num_samples = None
 
     def __getitem__(self, index):
         point_cloud = point_clouds.PointCloud()
-        point_cloud.load_from_mat(self.file_path(index), self.array_name, transpose=True)
+        point_cloud.load_from_mat(self.file_path(index), self.array_name,
+                                  transpose=self.transpose)
         return point_cloud
 
     @property
