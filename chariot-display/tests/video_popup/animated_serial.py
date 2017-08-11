@@ -1,3 +1,5 @@
+import time
+
 from datasets import point_clouds, video_popup
 from rendering import scene
 
@@ -20,6 +22,7 @@ class Animator(scene.SceneAnimator):
     def execute(self):
         try:
             self.update_point_cloud('front', next(self.point_cloud_loader))
+            time.sleep(1)
         except StopIteration:
             print('Done, repeating animation.')
             self.point_cloud_loader.reset()

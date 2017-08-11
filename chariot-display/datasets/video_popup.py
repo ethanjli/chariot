@@ -41,7 +41,23 @@ class KittiDataset(datasets.Dataset):
                         array_name='points',
                         transpose=False
                     )
-                }
+                },
+                'sparse_foreground': {
+                    'files': point_clouds.Sequence(
+                        sequences_root_path,
+                        prefix='points_foreground_',
+                        array_name='points',
+                        transpose=False
+                    )
+                },
+                'dense_foreground': {
+                    'files': point_clouds.Sequence(
+                        sequences_root_path,
+                        prefix='points_dense_foreground_',
+                        array_name='points',
+                        transpose=False
+                    )
+                },
             }
         }
 
