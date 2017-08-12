@@ -23,9 +23,18 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(self.track.coordinates[0][0], -122.17424, 'Incorrect coordinate parsing')
         self.assertEqual(self.track.coordinates[0][1], 37.42786, 'Incorrect coordinate parsing')
         self.assertEqual(self.track.coordinates[0][2], -9999.0, 'Incorrect coordinate parsing')
+
+    def test_samples(self):
         self.assertEqual(self.track.samples[0].coord[0], -122.17424, 'Incorrect coordinate parsing')
         self.assertEqual(self.track.samples[0].coord[1], 37.42786, 'Incorrect coordinate parsing')
         self.assertEqual(self.track.samples[0].coord[2], -9999.0, 'Incorrect coordinate parsing')
+
+    def test_long_lat(self):
+        self.assertEqual(self.track.longitudes[0], -122.17424, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.latitudes[0], 37.42786, 'Incorrect coordinate parsing')
+
+    def test_bounds(self):
+        print self.track.bounds
 
 class TestKMLSequence(unittest.TestCase):
     def setUp(self):

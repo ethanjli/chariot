@@ -20,3 +20,7 @@ class TestDataset(unittest.TestCase):
                          os.path.join(DATASETS_PATH, 'geospatial_maps', 'shape', 'buildings.shp'),
                          'Incorrect path')
 
+    def test_bounds(self):
+        self.assertEqual(self.dataset.bounds, (-122.18383, -122.15447, 37.42149, 37.43545),
+                         'Incorrect bounds')
+

@@ -1,8 +1,12 @@
+from data import gps_tracks
 from datasets import geospatial_maps
 from rendering import geospatial_map
+from tests.unit._data.gps_tracks import TRACK_KML_PATH
 
 dataset = geospatial_maps.Dataset('planet-osm_Stanford_Campus')
-#dataset = geospatial_maps.Dataset('planet-osm_Hella_Ventures')
+track = gps_tracks.KMLSequence(TRACK_KML_PATH)
+track.load()
 map_canvas = geospatial_map.MapCanvas()
 map_canvas.populate_map(dataset)
+map_canvas.plot_track(track)
 map_canvas.start_rendering()

@@ -19,6 +19,7 @@ class Track(object):
         self.timestamps = None
         self.coordinates = None
         self.samples = None
+        self._bounds = None
 
     def load_from_kml(self, path):
         with open(path) as f:
@@ -43,10 +44,25 @@ class Track(object):
         return (tuple(float(value) for value in coordinate.text.split(' '))
                 for coordinate in coordinates)
 
+    @property
+    def longitudes(self):
+        return zip(*self.coordinates)[0]
+
+    @property
+    def latitudes(self):
+        return zip(*self.coordinates)[1]
+
     def __len__(self):
         if self.timestamps is not None:
             return len(self.timestamps)
         return None
+
+    @property
+    def bounds(self):
+        if self._bounds is None:
+            self._bounds = (min(self.longitudes), max(self.longitudes),
+                            min(self.latitudes), max(self.latitudes))
+        return self._bounds
 
 class KMLSequence(data.DataLoader, data.DataGenerator, Track):
     """Interface for a GPS sequence in a track KML file."""
