@@ -10,7 +10,7 @@ TRACK_KML_PATH = os.path.join(_PACKAGE_PATH, 'gps_track.kml')
 
 class TestLoading(unittest.TestCase):
     def setUp(self):
-        self.track = gps.GPSTrack()
+        self.track = gps.Track()
         self.track.load_from_kml(TRACK_KML_PATH)
 
     def test_loading(self):
@@ -20,10 +20,21 @@ class TestLoading(unittest.TestCase):
                          'Incorrect loading')
         self.assertTrue(isinstance(self.track.timestamps[0], datetime.datetime),
                         'Incorrect timestamp parsing')
-        self.assertEqual(self.track.coordinates[0][0], -122.17424,
-                         'Incorrect coordinate parsing')
-        self.assertEqual(self.track.coordinates[0][1], 37.42786,
-                         'Incorrect coordinate parsing')
-        self.assertEqual(self.track.coordinates[0][2], -9999.0,
-                         'Incorrect coordinate parsing')
+        self.assertEqual(self.track.coordinates[0][0], -122.17424, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.coordinates[0][1], 37.42786, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.coordinates[0][2], -9999.0, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.samples[0].coord[0], -122.17424, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.samples[0].coord[1], 37.42786, 'Incorrect coordinate parsing')
+        self.assertEqual(self.track.samples[0].coord[2], -9999.0, 'Incorrect coordinate parsing')
+
+class TestKMLSequence(unittest.TestCase):
+    def setUp(self):
+        self.sequence = gps.KMLSequence(TRACK_KML_PATH)
+
+    def test_loading(self):
+        self.sequence.load()
+        next_coordinates = next(self.sequence).coord
+        self.assertEqual(next_coordinates[0], -122.17424, 'Incorrect coordinate parsing')
+        self.assertEqual(next_coordinates[1], 37.42786, 'Incorrect coordinate parsing')
+        self.assertEqual(next_coordinates[2], -9999.0, 'Incorrect coordinate parsing')
 
