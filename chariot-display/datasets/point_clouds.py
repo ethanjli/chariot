@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 """Functions and classes for loading of point clouds."""
 import ctypes
 

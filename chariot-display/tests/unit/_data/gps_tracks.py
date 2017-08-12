@@ -3,14 +3,14 @@ import unittest
 import os
 import datetime
 
-from data import gps
+from data import gps_tracks
 
 _PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 TRACK_KML_PATH = os.path.join(_PACKAGE_PATH, 'gps_track.kml')
 
 class TestLoading(unittest.TestCase):
     def setUp(self):
-        self.track = gps.Track()
+        self.track = gps_tracks.Track()
         self.track.load_from_kml(TRACK_KML_PATH)
 
     def test_loading(self):
@@ -29,7 +29,7 @@ class TestLoading(unittest.TestCase):
 
 class TestKMLSequence(unittest.TestCase):
     def setUp(self):
-        self.sequence = gps.KMLSequence(TRACK_KML_PATH)
+        self.sequence = gps_tracks.KMLSequence(TRACK_KML_PATH)
 
     def test_loading(self):
         self.sequence.load()
