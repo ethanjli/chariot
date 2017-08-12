@@ -13,7 +13,10 @@ class TestDataset(unittest.TestCase):
         self.dataset = geospatial_maps.Dataset('geospatial_maps', parent_path=DATASETS_PATH)
 
     def test_init(self):
-        self.assertEqual(self.dataset.roads_path,
-                         os.path.join(DATASETS_PATH, 'shape', 'roads.shp'),
-                         'Incorrect parent path')
+        self.assertEqual(self.dataset.get_path('roads'),
+                         os.path.join(DATASETS_PATH, 'geospatial_maps', 'shape', 'roads.shp'),
+                         'Incorrect path')
+        self.assertEqual(self.dataset.get_path('buildings'),
+                         os.path.join(DATASETS_PATH, 'geospatial_maps', 'shape', 'buildings.shp'),
+                         'Incorrect path')
 

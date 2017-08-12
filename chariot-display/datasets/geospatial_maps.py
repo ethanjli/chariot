@@ -5,19 +5,21 @@ import cartopy
 
 import datasets
 
+SHAPES = [
+    'buildings', 'landuse', 'natural', 'places', 'points', 'railways', 'roads', 'waterways'
+]
+
 class Dataset(datasets.Dataset):
     """A collection of shapefiles for a region."""
     def __init__(self, name, parent_path=None):
         self.name = name
         self._parent_path = parent_path
 
-    @property
-    def roads_path(self):
-        return os.path.join(self.parent_path, self.name, 'shape', 'roads.shp')
+    def get_path(self, shape_name):
+        return os.path.join(self.parent_path, self.name, 'shape', shape_name + '.shp')
 
-    @property
-    def roads_feature(self):
-        reader = cartopy.io.shapereader.Reader(self.roads_path)
+    def get_feature(self, shape_name):
+        reader = cartopy.io.shapereader.Reader(self.get_path(shape_name))
         feature = cartopy.feature.ShapelyFeature(reader.geometries(),
                                                  cartopy.crs.PlateCarree())
         return feature
