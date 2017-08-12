@@ -1,0 +1,29 @@
+#!/usr/bin/env python2
+import unittest
+import os
+import datetime
+
+from data import gps
+
+_PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+TRACK_KML_PATH = os.path.join(_PACKAGE_PATH, 'gps_track.kml')
+
+class TestLoading(unittest.TestCase):
+    def setUp(self):
+        self.track = gps.GPSTrack()
+        self.track.load_from_kml(TRACK_KML_PATH)
+
+    def test_loading(self):
+        self.assertEqual(len(self.track.timestamps), 116,
+                         'Incorrect loading')
+        self.assertEqual(len(self.track.coordinates), len(self.track.timestamps),
+                         'Incorrect loading')
+        self.assertTrue(isinstance(self.track.timestamps[0], datetime.datetime),
+                        'Incorrect timestamp parsing')
+        self.assertEqual(self.track.coordinates[0][0], -122.17424,
+                         'Incorrect coordinate parsing')
+        self.assertEqual(self.track.coordinates[0][1], 37.42786,
+                         'Incorrect coordinate parsing')
+        self.assertEqual(self.track.coordinates[0][2], -9999.0,
+                         'Incorrect coordinate parsing')
+
