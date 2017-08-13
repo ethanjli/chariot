@@ -1,30 +1,20 @@
-import os
-
-from data import gps_tracks
-from datasets import datasets, geospatial_maps
+from datasets import geospatial_maps
 from rendering import geospatial_map
 
-class Animator(object):
+class Animator(geospatial_map.TrackAnimator):
     def __init__(self):
+        super(Animator, self).__init__('mytracks_20170804_125713.kml')
         self.dataset = geospatial_maps.Dataset('planet-osm_Stanford_Campus')
-        self.track = gps_tracks.KMLSequence(
-            os.path.join(datasets.DATASETS_PATH, 'mytracks_20170804_125713.kml')
-        )
-        self.track.load()
 
     def register_canvas(self, canvas):
         self.canvas = canvas
         canvas.initialize_map(self.dataset)
         canvas.initialize_track(self.track)
         canvas.initialize_location_indicator(self.track)
-        canvas.register_animator(self)
+        canvas.register_animator(self, blit=True)
 
     def execute(self, frame_input):
         return (self.canvas.update_location_indicator(*frame_input),)
-
-    @property
-    def frames(self):
-        return self.track.coordinates_and_deltas
 
 
 def main():

@@ -1,9 +1,13 @@
 """Classes for rendering geospatial maps."""
+import os
 import math
 
 import matplotlib.pyplot as plt
-import matplotlib.animation
+import matplotlib.animation as ma
 import cartopy
+
+from data import gps_tracks
+from datasets import datasets
 
 class MapCanvas(object):
     def __init__(self):
@@ -52,7 +56,17 @@ class MapCanvas(object):
         return self._draw_location_indicator(x, y, dx, dy)
 
     def register_animator(self, animator, **kwargs):
-        self.animation = matplotlib.animation.FuncAnimation(
+        self.animation = ma.FuncAnimation(
             self.fig, animator.execute, animator.frames, **kwargs
         )
+
+class TrackAnimator(object):
+    """Abstract base class for animating a track on a MapCanvas."""
+    def __init__(self, track_name, datasets_path=datasets.DATASETS_PATH):
+        self.track = gps_tracks.KMLSequence(os.path.join(datasets.DATASETS_PATH, track_name))
+        self.track.load()
+
+    @property
+    def frames(self):
+        return self.track.coordinates_and_deltas
 
