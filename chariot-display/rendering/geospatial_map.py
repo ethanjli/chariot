@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as ma
 import cartopy
 
+from utilities import files
 from data import gps_tracks
 from datasets import datasets
 
@@ -64,9 +65,19 @@ class TrackAnimator(object):
     """Abstract base class for animating a track on a MapCanvas."""
     def __init__(self, track_name, datasets_path=datasets.DATASETS_PATH):
         self.track = gps_tracks.KMLSequence(os.path.join(datasets.DATASETS_PATH, track_name))
+        self._datasets_path = datasets_path
         self.track.load()
 
     @property
     def frames(self):
         return self.track.coordinates_and_deltas
+
+    def start_rendering_to_file(self, name, **kwargs):
+        output_path = os.path.join(self._datasets_path, name)
+        files.make_dir_path(output_path)
+        screenshot_counter = 0
+        for frame in self.frames:
+            self.execute(frame)
+            plt.savefig(os.path.join(output_path, str(screenshot_counter) + '.png'), **kwargs)
+            screenshot_counter += 1
 
