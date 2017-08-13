@@ -92,7 +92,7 @@ class TrackAnimator(object):
         for frame in self.frames:
             self.execute(frame)
             file_path = os.path.join(output_path, str(screenshot_counter) + '.' + format)
-            self.on_save(frame, file_path)
+            self.on_save(frame, file_path, **kwargs)
             screenshot_counter += 1
 
     def on_save(self, frame_input, save_path, **kwargs):
