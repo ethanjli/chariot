@@ -52,6 +52,19 @@ class Track(object):
     def latitudes(self):
         return zip(*self.coordinates)[1]
 
+    @property
+    def longitude_deltas(self):
+        return [t - s for s, t in zip(self.longitudes, self.longitudes[1:])]
+
+    @property
+    def latitude_deltas(self):
+        return [t - s for s, t in zip(self.latitudes, self.latitudes[1:])]
+
+    @property
+    def coordinates_and_deltas(self):
+        return list(zip(self.longitudes, self.latitudes,
+                        self.longitude_deltas, self.latitude_deltas))
+
     def __len__(self):
         if self.timestamps is not None:
             return len(self.timestamps)
