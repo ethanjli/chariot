@@ -1,8 +1,8 @@
 """Classes for rendering geospatial maps."""
 import math
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.animation
 import cartopy
 
 class MapCanvas(object):
@@ -35,18 +35,24 @@ class MapCanvas(object):
 
     def initialize_location_indicator(self, track, size=0.0002):
         self._location_indicator_size = size
-        self.indicator = self._draw_location_indicator(*track.coordinates_and_deltas[0])
+        self._draw_location_indicator(*track.coordinates_and_deltas[0])
 
     def _draw_location_indicator(self, x, y, dx, dy):
         length = math.sqrt(dx * dx + dy * dy)
         size = self._location_indicator_size
-        return self.ax.arrow(x, y, dx * size / length, dy * size / length,
-                             transform=cartopy.crs.PlateCarree(),
-                             length_includes_head=True, width=0,
-                             head_length=size, head_width=size, overhang=-0.2,
-                             linewidth=0)
+        self.indicator = self.ax.arrow(x, y, dx * size / length, dy * size / length,
+                                       transform=cartopy.crs.PlateCarree(),
+                                       length_includes_head=True, width=0,
+                                       head_length=size, head_width=size, overhang=-0.2,
+                                       linewidth=0)
+        return self.indicator
 
     def update_location_indicator(self, x, y, dx, dy):
         self.indicator.remove()
-        self._draw_location_indicator(x, y, dx, dy)
+        return self._draw_location_indicator(x, y, dx, dy)
+
+    def register_animator(self, animator, **kwargs):
+        self.animation = matplotlib.animation.FuncAnimation(
+            self.fig, animator.execute, animator.frames, **kwargs
+        )
 

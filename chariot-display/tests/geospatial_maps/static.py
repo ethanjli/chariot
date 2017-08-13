@@ -1,10 +1,14 @@
+import os
+
 from data import gps_tracks
-from datasets import geospatial_maps
+from datasets import datasets, geospatial_maps
 from rendering import geospatial_map
 from tests.unit._data.gps_tracks import TRACK_KML_PATH
 
 dataset = geospatial_maps.Dataset('planet-osm_Stanford_Campus')
-track = gps_tracks.KMLSequence(TRACK_KML_PATH)
+track = gps_tracks.KMLSequence(
+    os.path.join(datasets.DATASETS_PATH, 'mytracks_20170804_125713.kml')
+)
 track.load()
 map_canvas = geospatial_map.MapCanvas()
 map_canvas.initialize_map(dataset)
