@@ -11,10 +11,17 @@ from data import gps_tracks
 from datasets import datasets
 
 class MapCanvas(object):
-    def __init__(self):
-        self.fig = plt.figure()
-        self.ax = plt.axes(projection=cartopy.crs.Mercator())
+    def __init__(self, **kwargs):
+        self.fig = plt.figure(**kwargs)
+        self.ax = self.fig.add_subplot(111, projection=cartopy.crs.Mercator())
+        self.ax.set_position([0, 0, 1, 1])
         self._location_indicator_size = None
+
+    def hide_borders(self):
+        self.fig.patch.set_visible(False)
+        self.ax.patch.set_visible(False)
+        self.ax.background_patch.set_visible(False)
+        self.ax.outline_patch.set_visible(False)
 
     def start_rendering(self):
         plt.show()
@@ -56,6 +63,12 @@ class MapCanvas(object):
         self.indicator.remove()
         return self._draw_location_indicator(x, y, dx, dy)
 
+    def focus_location_indicator(self, x, y, longitude_margins=0.0025,
+                                 latitude_margins=0.002):
+        bounds = (x - longitude_margins, x + longitude_margins,
+                  y - latitude_margins, y + latitude_margins)
+        self.ax.set_extent(bounds)
+
     def register_animator(self, animator, **kwargs):
         self.animation = ma.FuncAnimation(
             self.fig, animator.execute, animator.frames, **kwargs
@@ -72,12 +85,17 @@ class TrackAnimator(object):
     def frames(self):
         return self.track.coordinates_and_deltas
 
-    def start_rendering_to_file(self, name, **kwargs):
+    def start_rendering_to_file(self, name, format='png', **kwargs):
         output_path = os.path.join(self._datasets_path, name)
         files.make_dir_path(output_path)
         screenshot_counter = 0
         for frame in self.frames:
             self.execute(frame)
-            plt.savefig(os.path.join(output_path, str(screenshot_counter) + '.png'), **kwargs)
+            file_path = os.path.join(output_path, str(screenshot_counter) + '.' + format)
+            self.on_save(frame, file_path)
             screenshot_counter += 1
+
+    def on_save(self, frame_input, save_path, **kwargs):
+        """Do any necessary work after to save the current frame."""
+        plt.savefig(save_path, **kwargs)
 

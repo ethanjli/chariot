@@ -1,12 +1,5 @@
-import time
-
-import matplotlib
-matplotlib.use('Agg')
-
 from datasets import geospatial_maps
 from rendering import geospatial_map
-
-OUTPUT_NAME = 'Chariot_Map_' + time.strftime('%Y%m%d')
 
 class Animator(geospatial_map.TrackAnimator):
     def __init__(self):
@@ -22,6 +15,7 @@ class Animator(geospatial_map.TrackAnimator):
 
     def execute(self, frame_input):
         location_indicator = self.canvas.update_location_indicator(*frame_input)
+        self.canvas.focus_location_indicator(frame_input[0], frame_input[1])
         return (location_indicator,)
 
 
@@ -29,7 +23,7 @@ def main():
     canvas = geospatial_map.MapCanvas()
     animator = Animator()
     animator.register_canvas(canvas)
-    animator.start_rendering_to_file(OUTPUT_NAME, dpi=150, bbox_inches='tight', pad_inches=0)
+    canvas.start_rendering()
 
 
 if __name__ == '__main__':
