@@ -1,9 +1,8 @@
 """Classes for rendering geospatial maps."""
 import os
-import math
 
-import matplotlib.pyplot as plt
 import matplotlib.animation as ma
+import matplotlib.pyplot as plt
 import cartopy
 
 from utilities import files
@@ -15,29 +14,29 @@ class MapCanvas(object):
         self.fig = plt.figure(**kwargs)
         self.ax = self.fig.add_subplot(111, projection=cartopy.crs.Mercator())
         self.ax.set_position([0, 0, 1, 1])
+        self.ax.background_patch.set_facecolor('lightgray')
         self._location_indicator_size = None
 
     def hide_borders(self):
-        self.fig.patch.set_visible(False)
-        self.ax.patch.set_visible(False)
-        self.ax.background_patch.set_visible(False)
         self.ax.outline_patch.set_visible(False)
 
     def start_rendering(self):
         plt.show()
 
     def initialize_map(self, dataset):
-        self.ax.add_feature(dataset.get_feature('roads'), edgecolor='black', facecolor='')
-        self.ax.add_feature(dataset.get_feature('buildings'),
-                            edgecolor='gray', facecolor='gray')
-        self.ax.add_feature(dataset.get_feature('landuse'),
-                            edgecolor='gray', facecolor='gray')
-        self.ax.add_feature(dataset.get_feature('natural'), edgecolor='green', facecolor='')
+        self.ax.add_feature(dataset.get_feature('roads'), linewidth=16.0,
+                            edgecolor='white', facecolor='')
+        self.ax.add_feature(dataset.get_feature('buildings'), linewidth=4.0,
+                            edgecolor='gray', facecolor='tan')
+        self.ax.add_feature(dataset.get_feature('landuse'), linewidth=4.0,
+                            edgecolor='gray', facecolor='khaki')
+        self.ax.add_feature(dataset.get_feature('natural'), linewidth=4.0,
+                            edgecolor='darkgreen', facecolor='')
         self.ax.set_extent(dataset.bounds)
 
     def initialize_track(self, track, longitude_margins=0.001, latitude_margins=0.001):
         plt.plot(track.longitudes, track.latitudes, transform=cartopy.crs.PlateCarree(),
-                 color='blue')
+                 linewidth=8.0, color='royalblue')
         bounds = list(track.bounds)
         bounds[0] -= longitude_margins
         bounds[1] += longitude_margins
@@ -45,23 +44,23 @@ class MapCanvas(object):
         bounds[3] += latitude_margins
         self.ax.set_extent(bounds)
 
-    def initialize_location_indicator(self, track, size=0.0002):
+    def initialize_location_indicator(self, track, size=8.0):
         self._location_indicator_size = size
         self._draw_location_indicator(*track.coordinates_and_deltas[0])
 
     def _draw_location_indicator(self, x, y, dx, dy):
-        length = math.sqrt(dx * dx + dy * dy)
-        size = self._location_indicator_size
-        self.indicator = self.ax.arrow(x, y, dx * size / length, dy * size / length,
-                                       transform=cartopy.crs.PlateCarree(),
-                                       length_includes_head=True, width=0,
-                                       head_length=size, head_width=size, overhang=-0.2,
-                                       linewidth=0)
+        (self.indicator,) = plt.plot(
+            [x], [y], transform=cartopy.crs.Geodetic(), zorder=100,
+            markersize=self._location_indicator_size, marker='o', linestyle='',
+            color='mediumblue', markerfacecolor='mediumblue',
+            markeredgecolor='white', markeredgewidth=4.0
+        )
         return self.indicator
 
     def update_location_indicator(self, x, y, dx, dy):
-        self.indicator.remove()
-        return self._draw_location_indicator(x, y, dx, dy)
+        self.indicator.set_xdata([x])
+        self.indicator.set_ydata([y])
+        return self.indicator
 
     def focus_location_indicator(self, x, y, longitude_margins=0.0025,
                                  latitude_margins=0.002):

@@ -17,7 +17,7 @@ class Animator(geospatial_map.TrackAnimator):
         self.canvas = canvas
         canvas.initialize_map(self.dataset)
         canvas.initialize_track(self.track)
-        canvas.initialize_location_indicator(self.track)
+        canvas.initialize_location_indicator(self.track, size=24.0)
         canvas.register_animator(self)
 
     def execute(self, frame_input):
@@ -26,7 +26,7 @@ class Animator(geospatial_map.TrackAnimator):
 
 
 def main():
-    canvas = geospatial_map.MapCanvas()
+    canvas = geospatial_map.MapCanvas(figsize=(5, 5), dpi=60)
     animator = Animator()
     animator.register_canvas(canvas)
     animator.start_rendering_to_file(OUTPUT_NAME, dpi=150, bbox_inches='tight', pad_inches=0)
