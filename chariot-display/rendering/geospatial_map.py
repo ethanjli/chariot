@@ -75,14 +75,16 @@ class MapCanvas(object):
 
 class TrackAnimator(object):
     """Abstract base class for animating a track on a MapCanvas."""
-    def __init__(self, track_name, datasets_path=datasets.DATASETS_PATH):
-        self.track = gps_tracks.KMLSequence(os.path.join(datasets.DATASETS_PATH, track_name))
+    def __init__(self, track_name, Track=gps_tracks.Track,
+                 datasets_path=datasets.DATASETS_PATH):
+        self.track = gps_tracks.KMLSequence(os.path.join(datasets.DATASETS_PATH, track_name),
+                                            Track=Track)
         self._datasets_path = datasets_path
         self.track.load()
 
     @property
     def frames(self):
-        return self.track.coordinates_and_deltas
+        return self.track.track.coordinates_and_deltas
 
     def start_rendering_to_file(self, name, format='png', **kwargs):
         output_path = os.path.join(self._datasets_path, name)

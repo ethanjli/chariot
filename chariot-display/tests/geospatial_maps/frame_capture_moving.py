@@ -22,8 +22,8 @@ class Animator(geospatial_map.TrackAnimator):
         self.canvas = canvas
         self.canvas.hide_borders()
         canvas.initialize_map(self.dataset)
-        canvas.initialize_track(self.track)
-        canvas.initialize_location_indicator(self.track)
+        canvas.initialize_track(self.track.track)
+        canvas.initialize_location_indicator(self.track.track)
         canvas.register_animator(self)
 
     def execute(self, frame_input):
