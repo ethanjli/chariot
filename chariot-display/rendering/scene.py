@@ -28,6 +28,14 @@ VISUALS = {
             'units': 'updates/sec'
         }
     },
+    'right': {
+        'type': 'point_cloud',
+        'class': video_popup.RightVisual,
+        'framerate_counter': {
+            'name': 'local data',
+            'units': 'updates/sec'
+        }
+    },
     'foobar': {
         'type': 'image',
     }
