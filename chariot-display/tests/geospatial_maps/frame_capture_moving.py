@@ -7,6 +7,7 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 
 from utilities import figures
+from data import gps_tracks
 from datasets import geospatial_maps
 from rendering import geospatial_map
 
@@ -15,7 +16,8 @@ OUTPUT_DPI = 120
 
 class Animator(geospatial_map.TrackAnimator):
     def __init__(self):
-        super(Animator, self).__init__('mytracks_20170804_125713.kml')
+        super(Animator, self).__init__('mytracks_20170804_125713.kml',
+                                       gps_tracks.SmoothedTrack)
         self.dataset = geospatial_maps.Dataset('planet-osm_Stanford_Campus')
 
     def register_canvas(self, canvas):

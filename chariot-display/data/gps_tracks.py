@@ -78,6 +78,24 @@ class Track(object):
                             min(self.latitudes), max(self.latitudes))
         return self._bounds
 
+class SmoothedTrack(Track):
+    def __init__(self, window_length=9, polyorder=2):
+        super(SmoothedTrack, self).__init__()
+        self.window_length = window_length
+        self.polyorder = polyorder
+
+    def parse_mytracks(self, document):
+        super(SmoothedTrack, self).parse_mytracks(document)
+        coordinate_components = zip(*self.coordinates)
+        self.coordinates = zip(*(self.smooth(component)
+                                 for component in coordinate_components))
+
+    def smooth(self, values):
+        return scipy.signal.savgol_filter(
+            values, mode='nearest', window_length=self.window_length,
+            polyorder=self.polyorder
+        )
+
 class KMLSequence(data.DataLoader, data.DataGenerator):
     """Interface for a GPS sequence in a track KML file."""
     def __init__(self, path, Track=Track):
