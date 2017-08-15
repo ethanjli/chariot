@@ -31,8 +31,7 @@ class Track(object):
                             for (time, coord) in zip(self.timestamps, self.coordinates))
 
     def parse_mytracks(self, document):
-        tracks = document.Folder
-        track = tracks.find('.//gx:Track', namespaces=_XML_NS)
+        track = document.find('.//gx:Track', namespaces=_XML_NS)
         timestamps = track.find('./kml:when', namespaces=_XML_NS)
         coordinates = track.find('./gx:coord', namespaces=_XML_NS)
         self.timestamps = list(self.parse_timestamps(timestamps))
