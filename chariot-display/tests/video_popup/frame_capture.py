@@ -17,7 +17,7 @@ class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
         #self.dataset = video_popup.KittiDataset('VideoPopup_kitti_05_new')
-        self.dataset = video_popup.KittiDataset('VideoPopup_Logitech')
+        self.dataset = video_popup.KittiDataset('VideoPopup/0/DepthReconstruction/pc/DenseLinear/')
         #self.sequence = self.dataset.sequences['point_cloud']['sparse']['files']
         self.sequence = self.dataset.sequences['point_cloud']['dense_linear']['files']
         self.point_cloud_loader = point_clouds.SequenceConcurrentLoader(self.sequence)
