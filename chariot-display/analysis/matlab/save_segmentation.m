@@ -1,12 +1,12 @@
 function [] = saveSegmentation(seg_file)
     seg = load(seg_file);
     images = seg.images;
-    mkdir('Segmentation')
+    mkdir('SegmentedImages')
     for i = 1:size(images,1)
 	im = imread(images(i, :));
 	W = seg.W((2*i-1):(2*i), :);
 	f = plot_segmentation(im, W, seg.labels_objects);
-	saveas(f, ['Segmentation', '/image', num2str(i), '.png']);
+	saveas(f, ['SegmentedImages', '/image', num2str(i), '.png']);
     end
 end
 

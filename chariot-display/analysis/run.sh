@@ -55,7 +55,6 @@ cd $HOME_DIR
 mkdir $R_MOTSEG
 cd $R_MOTSEG
 cp $MOTSEG_RESULTS/results.mat .
-mkdir SegmentedImages
 matlab -nodisplay -r "addpath $MATLAB_DIR; addpath $R_MOTSEG; try,  load results.mat; save_segmentation('results.mat'), catch ME, getReport(ME), end; exit"
 cd $HOME_DIR
 
