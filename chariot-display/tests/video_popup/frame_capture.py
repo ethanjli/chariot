@@ -16,7 +16,9 @@ OUTPUT_PATH = path.join(datasets.DATASETS_PATH, 'Chariot_' + time.strftime('%Y%m
 class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
-        self.dataset = video_popup.KittiDataset('VideoPopup_kitti_05')
+        #self.dataset = video_popup.KittiDataset('VideoPopup_kitti_05_new')
+        self.dataset = video_popup.KittiDataset('VideoPopup_Logitech')
+        #self.sequence = self.dataset.sequences['point_cloud']['sparse']['files']
         self.sequence = self.dataset.sequences['point_cloud']['dense_linear']['files']
         self.point_cloud_loader = point_clouds.SequenceConcurrentLoader(self.sequence)
         self.screenshot_counter = 0
@@ -25,7 +27,7 @@ class Animator(scene.SceneAnimator):
         super(Animator, self).register_canvas(canvas)
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
-        self.init_point_cloud_visual('front', self.sequence, max_num_points=500000)
+        self.init_point_cloud_visual('front', self.sequence, max_num_points=800000)
         files.make_dir_path(OUTPUT_PATH)
         self.point_cloud_loader.load()
         canvas.register_timer_observer(self)

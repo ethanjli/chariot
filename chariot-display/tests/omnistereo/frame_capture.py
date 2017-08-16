@@ -36,7 +36,7 @@ class Animator(scene.SceneAnimator):
             self.scene_manager.execute(event)
 
             screenshot = vispy.gloo.util._screenshot()
-            scipy.misc.imsave(path.join(OUTPUT_PATH, str(self.screenshot_counter)) + '.png', screenshot)
+            scipy.misc.imsave(path.join(OUTPUT_PATH, "%03d" % (self.screenshot_counter)) + '.png', screenshot)
             self.screenshot_counter += 1
         except StopIteration:
             print('Finishing up...')
