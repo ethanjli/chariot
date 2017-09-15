@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"
+	xmlns:gx="http://www.google.com/kml/ext/2.2"
+	xmlns:atom="http://www.w3.org/2005/Atom">
+	<Document>
+		<open>1</open>
+		<visibility>1</visibility>
+		<name><![CDATA[Route from 2017-08-04 12:57]]></name>
+		<atom:author><atom:name><![CDATA[Created by My Tracks from Daniel Qin]]></atom:name></atom:author>
+		<Style id="track">
+			<LineStyle><color>7f0000ff</color><width>4</width></LineStyle>
+			<IconStyle>
+				<scale>1.3</scale>
+				<Icon><href>http://earth.google.com/images/kml-icons/track-directional/track-0.png</href></Icon>
+			</IconStyle>
+		</Style>
+		<Style id="start"><IconStyle>
+				<scale>1.3</scale>
+				<Icon><href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href></Icon>
+				<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle></Style>
+		<Style id="end"><IconStyle>
+				<scale>1.3</scale>
+				<Icon><href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href></Icon>
+				<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle></Style>
+		<Style id="statistics"><IconStyle>
+				<scale>1.3</scale>
+				<Icon><href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href></Icon>
+				<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle></Style>
+		<Style id="waypoint"><IconStyle>
+				<scale>1.3</scale>
+				<Icon><href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href></Icon>
+				<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle></Style>
+		<Schema id="schema">
+			<gx:SimpleArrayField name="power" type="int">
+				<displayName><![CDATA[Power (W)]]></displayName>
+			</gx:SimpleArrayField>
+			<gx:SimpleArrayField name="cadence" type="int">
+				<displayName><![CDATA[Cadence (rpm)]]></displayName>
+			</gx:SimpleArrayField>
+			<gx:SimpleArrayField name="heart_rate" type="int">
+				<displayName><![CDATA[Heart rate (bpm)]]></displayName>
+			</gx:SimpleArrayField>
+		</Schema>
+		<Folder><name><![CDATA[Tracks]]></name>
+			<open>1</open>
+			<Placemark>
+				<name><![CDATA[Start]]></name>
+				<description><![CDATA[]]></description>
+				<TimeStamp><when>2017-08-04T19:57:20.699Z</when></TimeStamp>
+				<styleUrl>#start</styleUrl>
+				<Point>
+					<coordinates>-122.17424,37.42786</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="tour">
+				<name><![CDATA[Route from 2017-08-04 12:57]]></name>
+				<description></description>
+				<styleUrl>#track</styleUrl>
+				<gx:MultiTrack>
+					<altitudeMode>absolute</altitudeMode>
+					<gx:interpolate>0</gx:interpolate>
+					<gx:Track>
+						<when>2017-08-04T19:57:20.699Z</when>
+						<when>2017-08-04T19:57:35.872Z</when>
+						<when>2017-08-04T19:57:40.950Z</when>
+						<when>2017-08-04T19:57:45.000Z</when>
+						<when>2017-08-04T19:57:46.071Z</when>
+						<when>2017-08-04T19:57:48.000Z</when>
+						<when>2017-08-04T19:57:50.000Z</when>
+						<when>2017-08-04T19:57:51.216Z</when>
+						<when>2017-08-04T19:57:53.000Z</when>
+						<when>2017-08-04T19:57:54.000Z</when>
+						<when>2017-08-04T19:57:55.000Z</when>
+						<when>2017-08-04T19:57:56.000Z</when>
+						<when>2017-08-04T19:57:58.000Z</when>
+						<when>2017-08-04T19:58:00.000Z</when>
+						<when>2017-08-04T19:58:02.000Z</when>
+						<when>2017-08-04T19:58:03.000Z</when>
+						<when>2017-08-04T19:58:07.000Z</when>
+						<when>2017-08-04T19:58:08.000Z</when>
+						<when>2017-08-04T19:58:09.000Z</when>
+						<when>2017-08-04T19:58:10.000Z</when>
+						<when>2017-08-04T19:58:12.000Z</when>
+						<when>2017-08-04T19:58:13.000Z</when>
+						<when>2017-08-04T19:58:15.000Z</when>
+						<when>2017-08-04T19:58:16.000Z</when>
+						<when>2017-08-04T19:58:18.000Z</when>
+						<when>2017-08-04T19:58:19.000Z</when>
+						<when>2017-08-04T19:58:20.000Z</when>
+						<when>2017-08-04T19:58:22.000Z</when>
+						<when>2017-08-04T19:58:23.000Z</when>
+						<when>2017-08-04T19:58:25.000Z</when>
+						<when>2017-08-04T19:58:26.000Z</when>
+						<when>2017-08-04T19:58:28.000Z</when>
+						<when>2017-08-04T19:58:29.000Z</when>
+						<when>2017-08-04T19:58:31.000Z</when>
+						<when>2017-08-04T19:58:32.000Z</when>
+						<when>2017-08-04T19:58:33.000Z</when>
+						<when>2017-08-04T19:58:34.000Z</when>
+						<when>2017-08-04T19:58:35.000Z</when>
+						<when>2017-08-04T19:58:37.000Z</when>
+						<when>2017-08-04T19:58:38.000Z</when>
+						<when>2017-08-04T19:58:40.000Z</when>
+						<when>2017-08-04T19:58:42.000Z</when>
+						<when>2017-08-04T19:58:43.000Z</when>
+						<when>2017-08-04T19:58:45.000Z</when>
+						<when>2017-08-04T19:58:47.000Z</when>
+						<when>2017-08-04T19:58:48.000Z</when>
+						<when>2017-08-04T19:58:49.000Z</when>
+						<when>2017-08-04T19:58:50.000Z</when>
+						<when>2017-08-04T19:58:51.000Z</when>
+						<when>2017-08-04T19:58:53.000Z</when>
+						<when>2017-08-04T19:59:02.000Z</when>
+						<when>2017-08-04T19:59:04.000Z</when>
+						<when>2017-08-04T19:59:06.000Z</when>
+						<when>2017-08-04T19:59:07.000Z</when>
+						<when>2017-08-04T19:59:09.000Z</when>
+						<when>2017-08-04T19:59:11.000Z</when>
+						<when>2017-08-04T19:59:12.000Z</when>
+						<when>2017-08-04T19:59:13.000Z</when>
+						<when>2017-08-04T19:59:15.000Z</when>
+						<when>2017-08-04T19:59:17.000Z</when>
+						<when>2017-08-04T19:59:18.000Z</when>
+						<when>2017-08-04T19:59:19.000Z</when>
+						<when>2017-08-04T19:59:21.000Z</when>
+						<when>2017-08-04T19:59:22.000Z</when>
+						<when>2017-08-04T19:59:24.000Z</when>
+						<when>2017-08-04T19:59:26.000Z</when>
+						<when>2017-08-04T19:59:27.000Z</when>
+						<when>2017-08-04T19:59:28.000Z</when>
+						<when>2017-08-04T19:59:30.000Z</when>
+						<when>2017-08-04T19:59:32.000Z</when>
+						<when>2017-08-04T19:59:33.000Z</when>
+						<when>2017-08-04T19:59:35.000Z</when>
+						<when>2017-08-04T19:59:36.000Z</when>
+						<when>2017-08-04T19:59:38.000Z</when>
+						<when>2017-08-04T19:59:39.000Z</when>
+						<when>2017-08-04T19:59:40.000Z</when>
+						<when>2017-08-04T19:59:41.000Z</when>
+						<when>2017-08-04T19:59:43.000Z</when>
+						<when>2017-08-04T19:59:44.000Z</when>
+						<when>2017-08-04T19:59:46.000Z</when>
+						<when>2017-08-04T19:59:47.000Z</when>
+						<when>2017-08-04T19:59:48.000Z</when>
+						<when>2017-08-04T19:59:49.000Z</when>
+						<when>2017-08-04T19:59:50.000Z</when>
+						<when>2017-08-04T19:59:52.000Z</when>
+						<when>2017-08-04T19:59:54.000Z</when>
+						<when>2017-08-04T19:59:55.000Z</when>
+						<when>2017-08-04T19:59:56.000Z</when>
+						<when>2017-08-04T19:59:58.000Z</when>
+						<when>2017-08-04T20:00:00.000Z</when>
+						<when>2017-08-04T20:00:01.000Z</when>
+						<when>2017-08-04T20:00:02.000Z</when>
+						<when>2017-08-04T20:00:03.000Z</when>
+						<when>2017-08-04T20:00:04.000Z</when>
+						<when>2017-08-04T20:00:06.000Z</when>
+						<when>2017-08-04T20:00:08.000Z</when>
+						<when>2017-08-04T20:00:09.000Z</when>
+						<when>2017-08-04T20:00:10.000Z</when>
+						<when>2017-08-04T20:00:11.000Z</when>
+						<when>2017-08-04T20:00:12.000Z</when>
+						<when>2017-08-04T20:00:13.000Z</when>
+						<when>2017-08-04T20:00:14.000Z</when>
+						<when>2017-08-04T20:00:16.000Z</when>
+						<when>2017-08-04T20:00:18.000Z</when>
+						<when>2017-08-04T20:00:19.000Z</when>
+						<when>2017-08-04T20:00:21.000Z</when>
+						<when>2017-08-04T20:00:23.000Z</when>
+						<when>2017-08-04T20:00:25.000Z</when>
+						<when>2017-08-04T20:00:27.000Z</when>
+						<when>2017-08-04T20:00:29.000Z</when>
+						<when>2017-08-04T20:00:31.000Z</when>
+						<when>2017-08-04T20:00:35.000Z</when>
+						<when>2017-08-04T20:00:36.000Z</when>
+						<when>2017-08-04T20:00:37.000Z</when>
+						<when>2017-08-04T20:00:39.000Z</when>
+						<when>2017-08-04T20:00:45.000Z</when>
+						<gx:coord>-122.17424 37.42786 -9999.0</gx:coord>
+						<gx:coord>-122.17327 37.427227 -9999.0</gx:coord>
+						<gx:coord>-122.172844 37.42832 -9999.0</gx:coord>
+						<gx:coord>-122.17387 37.42776 2.0</gx:coord>
+						<gx:coord>-122.17388 37.427757 -9999.0</gx:coord>
+						<gx:coord>-122.17366 37.42777 7.0</gx:coord>
+						<gx:coord>-122.1738 37.427757 2.0</gx:coord>
+						<gx:coord>-122.17376 37.427742 -9999.0</gx:coord>
+						<gx:coord>-122.17374 37.427753 5.0</gx:coord>
+						<gx:coord>-122.17371 37.42774 6.0</gx:coord>
+						<gx:coord>-122.173676 37.427753 8.0</gx:coord>
+						<gx:coord>-122.17369 37.42775 7.0</gx:coord>
+						<gx:coord>-122.1737 37.427715 5.0</gx:coord>
+						<gx:coord>-122.173645 37.4277 5.0</gx:coord>
+						<gx:coord>-122.17366 37.4277 0.0</gx:coord>
+						<gx:coord>-122.173676 37.427692 0.0</gx:coord>
+						<gx:coord>-122.17366 37.427746 0.0</gx:coord>
+						<gx:coord>-122.173645 37.427784 0.0</gx:coord>
+						<gx:coord>-122.17363 37.427826 0.0</gx:coord>
+						<gx:coord>-122.17361 37.427864 0.0</gx:coord>
+						<gx:coord>-122.17357 37.427944 -1.0</gx:coord>
+						<gx:coord>-122.17355 37.427986 0.0</gx:coord>
+						<gx:coord>-122.17353 37.428074 0.0</gx:coord>
+						<gx:coord>-122.17352 37.428116 1.0</gx:coord>
+						<gx:coord>-122.1735 37.428207 1.0</gx:coord>
+						<gx:coord>-122.1735 37.428276 2.0</gx:coord>
+						<gx:coord>-122.173485 37.42832 1.0</gx:coord>
+						<gx:coord>-122.17346 37.428406 -1.0</gx:coord>
+						<gx:coord>-122.17345 37.42845 -1.0</gx:coord>
+						<gx:coord>-122.173416 37.42856 0.0</gx:coord>
+						<gx:coord>-122.1734 37.42861 1.0</gx:coord>
+						<gx:coord>-122.17337 37.42872 2.0</gx:coord>
+						<gx:coord>-122.173355 37.428772 2.0</gx:coord>
+						<gx:coord>-122.17333 37.428875 0.0</gx:coord>
+						<gx:coord>-122.17332 37.428925 1.0</gx:coord>
+						<gx:coord>-122.17328 37.428955 -1.0</gx:coord>
+						<gx:coord>-122.173225 37.429043 -2.0</gx:coord>
+						<gx:coord>-122.17321 37.42908 -2.0</gx:coord>
+						<gx:coord>-122.17318 37.429184 -2.0</gx:coord>
+						<gx:coord>-122.173164 37.429234 -2.0</gx:coord>
+						<gx:coord>-122.17313 37.42933 -1.0</gx:coord>
+						<gx:coord>-122.173096 37.429417 -1.0</gx:coord>
+						<gx:coord>-122.17308 37.429478 0.0</gx:coord>
+						<gx:coord>-122.17305 37.429577 2.0</gx:coord>
+						<gx:coord>-122.172935 37.429657 3.0</gx:coord>
+						<gx:coord>-122.172874 37.429672 2.0</gx:coord>
+						<gx:coord>-122.172844 37.429638 2.0</gx:coord>
+						<gx:coord>-122.17279 37.42962 3.0</gx:coord>
+						<gx:coord>-122.17274 37.429596 3.0</gx:coord>
+						<gx:coord>-122.17261 37.429577 2.0</gx:coord>
+						<gx:coord>-122.17202 37.429443 -2.0</gx:coord>
+						<gx:coord>-122.17185 37.42947 -2.0</gx:coord>
+						<gx:coord>-122.17176 37.42944 -4.0</gx:coord>
+						<gx:coord>-122.171684 37.42943 -4.0</gx:coord>
+						<gx:coord>-122.17157 37.42938 -5.0</gx:coord>
+						<gx:coord>-122.17143 37.429344 -6.0</gx:coord>
+						<gx:coord>-122.17137 37.429325 -6.0</gx:coord>
+						<gx:coord>-122.17131 37.429317 -4.0</gx:coord>
+						<gx:coord>-122.17118 37.42932 -3.0</gx:coord>
+						<gx:coord>-122.171074 37.429268 -3.0</gx:coord>
+						<gx:coord>-122.17101 37.42926 -3.0</gx:coord>
+						<gx:coord>-122.17095 37.429237 -3.0</gx:coord>
+						<gx:coord>-122.17084 37.429203 -3.0</gx:coord>
+						<gx:coord>-122.17076 37.429188 -3.0</gx:coord>
+						<gx:coord>-122.17063 37.42916 -3.0</gx:coord>
+						<gx:coord>-122.1705 37.429134 -3.0</gx:coord>
+						<gx:coord>-122.17044 37.429127 -2.0</gx:coord>
+						<gx:coord>-122.17037 37.42912 -1.0</gx:coord>
+						<gx:coord>-122.17026 37.429092 1.0</gx:coord>
+						<gx:coord>-122.17013 37.42907 1.0</gx:coord>
+						<gx:coord>-122.17011 37.429058 -1.0</gx:coord>
+						<gx:coord>-122.17003 37.429035 -3.0</gx:coord>
+						<gx:coord>-122.16996 37.42902 -2.0</gx:coord>
+						<gx:coord>-122.16985 37.428997 -3.0</gx:coord>
+						<gx:coord>-122.1698 37.42898 -3.0</gx:coord>
+						<gx:coord>-122.16974 37.428967 -3.0</gx:coord>
+						<gx:coord>-122.169685 37.42896 -2.0</gx:coord>
+						<gx:coord>-122.169586 37.428932 -4.0</gx:coord>
+						<gx:coord>-122.16954 37.42892 -6.0</gx:coord>
+						<gx:coord>-122.16942 37.428898 -3.0</gx:coord>
+						<gx:coord>-122.169365 37.428883 -3.0</gx:coord>
+						<gx:coord>-122.169304 37.428875 -4.0</gx:coord>
+						<gx:coord>-122.169235 37.428864 -4.0</gx:coord>
+						<gx:coord>-122.16919 37.428852 -5.0</gx:coord>
+						<gx:coord>-122.169075 37.42882 -7.0</gx:coord>
+						<gx:coord>-122.16895 37.428802 -6.0</gx:coord>
+						<gx:coord>-122.16885 37.428802 -8.0</gx:coord>
+						<gx:coord>-122.16882 37.42878 -7.0</gx:coord>
+						<gx:coord>-122.1687 37.428757 -8.0</gx:coord>
+						<gx:coord>-122.16858 37.428745 -9.0</gx:coord>
+						<gx:coord>-122.1685 37.428722 -9.0</gx:coord>
+						<gx:coord>-122.16847 37.428703 -9.0</gx:coord>
+						<gx:coord>-122.16847 37.428688 -9.0</gx:coord>
+						<gx:coord>-122.16839 37.42869 -9.0</gx:coord>
+						<gx:coord>-122.16827 37.42865 -10.0</gx:coord>
+						<gx:coord>-122.16812 37.428623 -9.0</gx:coord>
+						<gx:coord>-122.1681 37.42862 -7.0</gx:coord>
+						<gx:coord>-122.16806 37.428608 -7.0</gx:coord>
+						<gx:coord>-122.168015 37.428642 -8.0</gx:coord>
+						<gx:coord>-122.16801 37.428646 -8.0</gx:coord>
+						<gx:coord>-122.16801 37.42868 -9.0</gx:coord>
+						<gx:coord>-122.16799 37.428696 -8.0</gx:coord>
+						<gx:coord>-122.16796 37.428734 -8.0</gx:coord>
+						<gx:coord>-122.167946 37.428837 -7.0</gx:coord>
+						<gx:coord>-122.16792 37.428864 -8.0</gx:coord>
+						<gx:coord>-122.1679 37.428967 -9.0</gx:coord>
+						<gx:coord>-122.167885 37.42906 -9.0</gx:coord>
+						<gx:coord>-122.16791 37.429222 -8.0</gx:coord>
+						<gx:coord>-122.16786 37.429306 -7.0</gx:coord>
+						<gx:coord>-122.16784 37.42937 -7.0</gx:coord>
+						<gx:coord>-122.167816 37.429417 -9.0</gx:coord>
+						<gx:coord>-122.16779 37.42941 -10.0</gx:coord>
+						<gx:coord>-122.16773 37.42944 -9.0</gx:coord>
+						<gx:coord>-122.1677 37.429447 -9.0</gx:coord>
+						<gx:coord>-122.167725 37.429432 -8.0</gx:coord>
+						<gx:coord>-122.16772 37.429436 -9.0</gx:coord>
+					</gx:Track>
+				</gx:MultiTrack>
+			</Placemark>
+			<Placemark>
+				<name><![CDATA[End]]></name>
+				<description><![CDATA[]]></description>
+				<TimeStamp><when>2017-08-04T20:00:45.000Z</when></TimeStamp>
+				<styleUrl>#end</styleUrl>
+				<Point>
+					<coordinates>-122.16772,37.429436</coordinates>
+				</Point>
+			</Placemark>
+		</Folder>
+	</Document>
+</kml>

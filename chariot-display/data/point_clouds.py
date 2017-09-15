@@ -14,12 +14,14 @@ class PointCloud(arrays.ArraysSource):
         self.points = None
         self.colors = None
 
-    def load_from_mat(self, path, array_name, transpose=False):
+    def load_from_mat(self, path, array_name, transpose=False, color_type='float'):
         cloud = scipy.io.loadmat(path)[array_name]
         if transpose:
             cloud = cloud.T
         self.points = cloud[:, :3]
         self.colors = cloud[:, 3:]
+        if color_type == 'uint8':
+            self.colors /= 255.0
 
     @property
     def num_points(self):

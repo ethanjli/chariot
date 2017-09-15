@@ -17,24 +17,44 @@ class Animator(scene.SceneAnimator):
     def __init__(self):
         super(Animator, self).__init__()
         #self.dataset = video_popup.KittiDataset('VideoPopup_kitti_05_new')
-        self.dataset = video_popup.KittiDataset('VideoPopup/0/DepthReconstruction/pc/DenseLinear/')
-        #self.sequence = self.dataset.sequences['point_cloud']['sparse']['files']
-        self.sequence = self.dataset.sequences['point_cloud']['dense_linear']['files']
-        self.point_cloud_loader = point_clouds.SequenceConcurrentLoader(self.sequence)
+        #self.dataset = video_popup.LogC920x1Dataset('VideoPopup/0/DepthReconstruction/pc/DenseLinear/')
+        self.typ = 'DenseNearest'
+        self.label = 'dense_nearest'
+        self.dataset_left = video_popup.LogC920x1Dataset('/home/cvfish/Work/code/bitbucket/video_popup/results/DepthReconstructionLeft/PointClouds/'+self.typ)
+        self.dataset_front = video_popup.LogC920x1Dataset('/home/cvfish/Work/code/bitbucket/video_popup/results/DepthReconstructionFront/PointClouds/'+self.typ)
+        self.dataset_right = video_popup.LogC920x1Dataset('/home/cvfish/Work/code/bitbucket/video_popup/results/DepthReconstructionRight/PointClouds/'+self.typ)
+        #self.sequence = self.dataset.sequences['point_cloud']['dense_global']['files']
+        self.sequence_left = self.dataset_left.sequences['point_cloud'][self.label]['files']
+        self.sequence_front = self.dataset_front.sequences['point_cloud'][self.label]['files']
+        self.sequence_right = self.dataset_right.sequences['point_cloud'][self.label]['files']
+        self.point_cloud_loader_left = point_clouds.SequenceConcurrentLoader(self.sequence_left)
+        self.point_cloud_loader_front = point_clouds.SequenceConcurrentLoader(self.sequence_front)
+        self.point_cloud_loader_right = point_clouds.SequenceConcurrentLoader(self.sequence_right)
         self.screenshot_counter = 0
 
     def register_canvas(self, canvas):
         super(Animator, self).register_canvas(canvas)
         self.scene_manager.register_canvas(canvas)
         self.init_car_visual()
-        self.init_point_cloud_visual('front', self.sequence, max_num_points=800000)
+        self.init_point_cloud_visual('right', self.sequence_right, max_num_points=600000)
         files.make_dir_path(OUTPUT_PATH)
-        self.point_cloud_loader.load()
+        self.point_cloud_loader_right.load()
+        self.init_point_cloud_visual('front', self.sequence_front, max_num_points=600000)
+        files.make_dir_path(OUTPUT_PATH)
+        self.point_cloud_loader_front.load()
+        self.init_point_cloud_visual('left', self.sequence_left, max_num_points=600000)
+        files.make_dir_path(OUTPUT_PATH)
+        self.point_cloud_loader_left.load()
         canvas.register_timer_observer(self)
 
     def execute(self, event):
         try:
-            self.update_point_cloud('front', next(self.point_cloud_loader))
+	    pc = next(self.point_cloud_loader_right)
+            self.update_point_cloud('right', pc)
+	    pc = next(self.point_cloud_loader_front)
+            self.update_point_cloud('front', pc)
+	    pc = next(self.point_cloud_loader_left)
+	    self.update_point_cloud('left', pc)
             self.scene_manager.execute(event)
 
             screenshot = vispy.gloo.util._screenshot()

@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 """Helper functions for working with files."""
 import os
 import errno

@@ -28,6 +28,22 @@ VISUALS = {
             'units': 'updates/sec'
         }
     },
+    'left': {
+        'type': 'point_cloud',
+        'class': video_popup.LeftVisual,
+        'framerate_counter': {
+            'name': 'local data',
+            'units': 'updates/sec'
+        }
+    },
+    'right': {
+        'type': 'point_cloud',
+        'class': video_popup.RightVisual,
+        'framerate_counter': {
+            'name': 'local data',
+            'units': 'updates/sec'
+        }
+    },
     'foobar': {
         'type': 'image',
     }
@@ -45,7 +61,7 @@ VIEW_PRESETS = {
             'elevation': 15,
             'azimuth': 90,
             #'distance': 30,
-            'distance': 20,
+            'distance': 40,
             'center': (0, 0.9, 1.2)
         },
         'visuals': {   # Visual visibility

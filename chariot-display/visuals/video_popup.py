@@ -12,3 +12,27 @@ class FrontVisual(point_cloud.Visual):
         transform.translate((0, 1.5, 0))
         return transform
 
+class RightVisual(point_cloud.Visual):
+    def __init__(self):
+        super(RightVisual, self).__init__()
+
+    @staticmethod
+    def base_transform():
+        transform = vispy.visuals.transforms.AffineTransform()
+        transform.translate((0, 1.5, 0))
+        transform.rotate(-90, (0, 1, 0))
+	transform.scale((0.4))
+        return transform
+
+class LeftVisual(point_cloud.Visual):
+    def __init__(self):
+        super(LeftVisual, self).__init__()
+
+    @staticmethod
+    def base_transform():
+        transform = vispy.visuals.transforms.AffineTransform()
+        transform.translate((0, 1.5, 0))
+        transform.rotate(90, (0, 1, 0))
+	transform.scale((0.8))
+        return transform
+

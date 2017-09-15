@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 """Functions and classes for loading of point clouds."""
 import ctypes
 
@@ -22,16 +21,22 @@ class Sequence(sequences.FileSequence, point_clouds.Sequence):
             del kwargs['transpose']
         else:
             transpose = False
+        if 'color_type' in kwargs:
+            color_type = kwargs['color_type']
+            del kwargs['color_type']
+        else:
+            color_type = 'float'
         super(Sequence, self).__init__(*args, **kwargs)
         self.array_name = array_name
         self.transpose = transpose
+        self.color_type = color_type
         self._num_points = None
         self._num_samples = None
 
     def __getitem__(self, index):
         point_cloud = point_clouds.PointCloud()
         point_cloud.load_from_mat(self.file_path(index), self.array_name,
-                                  transpose=self.transpose)
+                                  transpose=self.transpose, color_type=self.color_type)
         return point_cloud
 
     @property
